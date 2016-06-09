@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS persons
+CREATE TABLE IF NOT EXISTS public.persons
 (
     id              SERIAL PRIMARY KEY,
     name            TEXT NOT NULL,
@@ -8,4 +8,11 @@ CREATE TABLE IF NOT EXISTS persons
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS persons_id_uindex ON public.persons (id);
-COMMENT ON TABLE public.persons IS 'Таблица персонажей'
+COMMENT ON TABLE public.persons IS 'Таблица персонажей';
+
+CREATE TABLE IF NOT EXISTS public.time
+(
+    id INTEGER DEFAULT 1 NOT NULL,
+    real_time INTEGER,
+    world_time INTEGER
+);

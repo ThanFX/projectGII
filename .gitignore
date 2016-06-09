@@ -3,4 +3,5 @@
 client/.meteor
 server/pkg
 server/src
+server/bin
 *.bat
