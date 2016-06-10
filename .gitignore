@@ -3,6 +3,8 @@
 client/.meteor
 server/pkg
 server/src/server/vendor/github.com
+server/src/github.com
 server/bin
 server/.cache
 *.bat
+server/src/server/server.*
