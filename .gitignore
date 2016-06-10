@@ -2,6 +2,7 @@
 .idea
 client/.meteor
 server/pkg
-server/src
+server/src/server/vendor/github.com
 server/bin
+server/.cache
 *.bat
