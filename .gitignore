@@ -3,6 +3,7 @@
 client/.meteor
 server/pkg
 server/src/server/vendor/github.com
+server/src/server/vendor/gopkg.in
 server/src/github.com
 server/bin
 server/.cache

@@ -8,7 +8,22 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+	"gopkg.in/robfig/cron.v2"
 )
+
+type Characteristics struct {
+	health     float32
+	fatigue    float32
+	hunger     float32
+	thirst     float32
+	somnolency float32
+}
+
+type Person struct {
+	person_id int
+	name      string
+	chr       Characteristics
+}
 
 /*
 Количество секунд мира на момент старта новой разработки
@@ -49,5 +64,8 @@ func main() {
 	} else {
 		defer db.Close()
 	}
+	c := cron.New()
+	c.AddFunc("5 * * * * *", func() { fmt.Println("Запуск по расписанию работает!!") })
+	c.Start()
 	set_world_time(db)
 }

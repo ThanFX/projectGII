@@ -3,16 +3,28 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "84hbcb5NWMIW9jQf51+2uaNj/eY=",
+			"checksumSHA1": "EOswc3oryg3w9p+NowzpnCRLtUc=",
 			"path": "github.com/lib/pq",
 			"revision": "ee1442bda7bd1b6a84e913bdb421cb1874ec629d",
 			"revisionTime": "2016-05-10T22:24:21Z"
 		},
 		{
-			"checksumSHA1": "xppHi82MLqVx1eyQmbhTesAEjx8=",
+			"checksumSHA1": "K4XuhnpGWTFMLSDIdvDr5AH3fTw=",
 			"path": "github.com/lib/pq/oid",
 			"revision": "ee1442bda7bd1b6a84e913bdb421cb1874ec629d",
 			"revisionTime": "2016-05-10T22:24:21Z"
+		},
+		{
+			"checksumSHA1": "xacYOvONLma/6tdIv2zAuGQnYPc=",
+			"path": "github.com/robfig/cron",
+			"revision": "6f2e8282a1a0d694e55a48ce7d077ee46747feeb",
+			"revisionTime": "2016-05-30T13:40:00Z"
+		},
+		{
+			"checksumSHA1": "lAbt9X69qIH5Ql7O1UCqQ2IG3Ng=",
+			"path": "gopkg.in/robfig/cron.v2",
+			"revision": "be2e0b0deed5a68ffee390b4583a13aff8321535",
+			"revisionTime": "2015-01-07T22:02:07Z"
 		}
 	],
 	"rootPath": "server"
