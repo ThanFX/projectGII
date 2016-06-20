@@ -9,3 +9,5 @@ server/bin
 server/.cache
 *.bat
 server/src/server/server.*
+server/restore*
+server/dump*
