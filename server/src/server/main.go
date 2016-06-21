@@ -32,12 +32,44 @@ type CheckPeriods struct {
 	State int
 }
 
+type CalendarPeriod struct {
+	MaxValue      int    `json: "maxValue"`
+	MinValue      int    `json: "minValue"`
+	PeriodName    string `json: "periodName"`
+	PeriodLabel   string `json: "periodLabel"`
+	TimeInSeconds int    `json: "timeInSeconds"`
+}
+
+var (
+	db  *sql.DB
+	err error
+)
+
+func getCalendarTime(worldTime int) {
+	var calendar []CalendarPeriod
+	var res string
+
+	//test := `{"maxValue": "60", "minValue": "0", "periodName": "минута", "periodLabel": "minute", "timeInSeconds": "60"}`
+
+	err := db.QueryRow("SELECT value->'periods' FROM config WHERE id = 'calendar';").Scan(&res)
+	if err != nil {
+		log.Fatal("Ошибка запроса в БД")
+	}
+	bytes := []byte(res)
+	err = json.Unmarshal(bytes, &calendar)
+	if err != nil {
+		log.Fatal("Ошибка парсинга структуры календаря")
+	}
+
+	fmt.Println(calendar)
+}
+
 /*
 Количество секунд мира на момент старта новой разработки
 UPDATE time SET world_time = 439555701 WHERE id = 1;
 */
 
-func set_world_time(db *sql.DB) {
+func set_world_time() {
 	var real_time_str, world_time_str, time_speed_str string
 	var real_time, world_time int64
 
@@ -49,14 +81,15 @@ func set_world_time(db *sql.DB) {
 	world_time, err = strconv.ParseInt(world_time_str, 10, 64)
 	time_speed, err := strconv.Atoi(time_speed_str)
 
-	go create_check(time_speed, db)
+	go create_check(time_speed)
+	getCalendarTime(1)
 
 	first_delta := time.Now().Unix() - real_time
 	for {
 		delta_time := (time.Now().Unix() - real_time) - first_delta
 		world_time += (delta_time * int64(time_speed))
 		real_time = time.Now().Unix()
-		_, err := db.Exec("UPDATE time SET real_time = $1, world_time = $2 WHERE id = 1", real_time, world_time)
+		_, err := db.Exec("UPDATE time SET real_time = $1, world_time = $2 WHERE id = 1;", real_time, world_time)
 		if err != nil {
 			log.Fatal("Ошибка записи в БД")
 		}
@@ -66,7 +99,7 @@ func set_world_time(db *sql.DB) {
 	}
 }
 
-func create_check(world_time_speed int, db *sql.DB) {
+func create_check(world_time_speed int) {
 	var res string
 	var check CheckPeriods
 
@@ -112,13 +145,16 @@ func hts_job() {
 	fmt.Println("Проверка голода, жажды и сонливости")
 }
 
-func main() {
+func init() {
 	db_url := "user=postgres password=postgres dbname=postgres sslmode=disable"
-	db, err := sql.Open("postgres", db_url)
+	db, err = sql.Open("postgres", db_url)
 	if err != nil {
 		log.Fatal("Ошибка соединения с БД")
 	} else {
-		defer db.Close()
+		//defer db.Close()
 	}
-	set_world_time(db)
+}
+
+func main() {
+	set_world_time()
 }
