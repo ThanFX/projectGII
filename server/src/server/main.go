@@ -9,6 +9,7 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/patrickmn/sortutil"
 	"gopkg.in/robfig/cron.v2"
 )
 
@@ -38,30 +39,43 @@ type CalendarPeriod struct {
 	PeriodName    string `json: "periodName"`
 	PeriodLabel   string `json: "periodLabel"`
 	TimeInSeconds int    `json: "timeInSeconds"`
+	WorldTime     int    `json: `
 }
 
 var (
-	db  *sql.DB
-	err error
+	db       *sql.DB
+	err      error
+	calendar []CalendarPeriod
 )
 
-func getCalendarTime(worldTime int) {
-	var calendar []CalendarPeriod
+func getWorldCalendarTime(worldTime int64) {
+	for key, _ := range calendar {
+		calendar[key].WorldTime = int(worldTime/int64(calendar[key].TimeInSeconds)) + calendar[key].MinValue
+		worldTime -= int64((calendar[key].WorldTime - calendar[key].MinValue) * calendar[key].TimeInSeconds)
+	}
+}
+
+func getWCTString() string {
+	return strconv.Itoa(calendar[0].WorldTime) + " год, " +
+		strconv.Itoa(calendar[1].WorldTime) + " месяц, " +
+		strconv.Itoa(calendar[2].WorldTime) + " декада, " +
+		strconv.Itoa(calendar[3].WorldTime) + " день, " +
+		strconv.Itoa(calendar[4].WorldTime) + ":" +
+		strconv.Itoa(calendar[5].WorldTime)
+}
+
+func getCalendar() {
 	var res string
-
-	//test := `{"maxValue": "60", "minValue": "0", "periodName": "минута", "periodLabel": "minute", "timeInSeconds": "60"}`
-
 	err := db.QueryRow("SELECT value->'periods' FROM config WHERE id = 'calendar';").Scan(&res)
 	if err != nil {
-		log.Fatal("Ошибка запроса в БД")
+		log.Fatal("Ошибка запроса календаря в БД")
 	}
 	bytes := []byte(res)
 	err = json.Unmarshal(bytes, &calendar)
 	if err != nil {
 		log.Fatal("Ошибка парсинга структуры календаря")
 	}
-
-	fmt.Println(calendar)
+	sortutil.DescByField(calendar, "TimeInSeconds")
 }
 
 /*
@@ -69,20 +83,19 @@ func getCalendarTime(worldTime int) {
 UPDATE time SET world_time = 439555701 WHERE id = 1;
 */
 
-func set_world_time() {
+func setWorldTime() {
 	var real_time_str, world_time_str, time_speed_str string
 	var real_time, world_time int64
 
-	err := db.QueryRow("SELECT real_time, world_time, time_speed FROM time WHERE id = 1").Scan(&real_time_str, &world_time_str, &time_speed_str)
+	err := db.QueryRow("SELECT real_time, world_time, time_speed FROM time WHERE id = 1;").Scan(&real_time_str, &world_time_str, &time_speed_str)
 	if err != nil {
-		log.Fatal("Ошибка запроса в БД")
+		log.Fatal("Ошибка запроса таймеров в БД", err)
 	}
 	real_time, err = strconv.ParseInt(real_time_str, 10, 64)
 	world_time, err = strconv.ParseInt(world_time_str, 10, 64)
 	time_speed, err := strconv.Atoi(time_speed_str)
 
 	go create_check(time_speed)
-	getCalendarTime(1)
 
 	first_delta := time.Now().Unix() - real_time
 	for {
@@ -91,11 +104,12 @@ func set_world_time() {
 		real_time = time.Now().Unix()
 		_, err := db.Exec("UPDATE time SET real_time = $1, world_time = $2 WHERE id = 1;", real_time, world_time)
 		if err != nil {
-			log.Fatal("Ошибка записи в БД")
+			log.Fatal("Ошибка записи таймеров в БД")
 		}
-		time.Sleep(time.Second)
+		go getWorldCalendarTime(world_time)
 		first_delta = 0
-		fmt.Println(real_time, world_time, time_speed)
+		fmt.Println(real_time, world_time, time_speed, getWCTString())
+		time.Sleep(time.Second)
 	}
 }
 
@@ -105,7 +119,7 @@ func create_check(world_time_speed int) {
 
 	err := db.QueryRow("SELECT value::json FROM config WHERE id = 'check_periods'").Scan(&res)
 	if err != nil {
-		log.Fatal("Ошибка запроса в БД")
+		log.Fatal("Ошибка запроса периодов проверки в БД")
 	}
 	bytes := []byte(res)
 	json.Unmarshal(bytes, &check)
@@ -151,10 +165,11 @@ func init() {
 	if err != nil {
 		log.Fatal("Ошибка соединения с БД")
 	} else {
-		//defer db.Close()
+		getCalendar()
 	}
 }
 
 func main() {
-	set_world_time()
+	defer db.Close()
+	setWorldTime()
 }

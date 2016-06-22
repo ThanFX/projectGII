@@ -15,10 +15,10 @@
 			"revisionTime": "2016-05-10T22:24:21Z"
 		},
 		{
-			"checksumSHA1": "xacYOvONLma/6tdIv2zAuGQnYPc=",
-			"path": "github.com/robfig/cron",
-			"revision": "6f2e8282a1a0d694e55a48ce7d077ee46747feeb",
-			"revisionTime": "2016-05-30T13:40:00Z"
+			"checksumSHA1": "XNYCGT0X/+ICa5mDnwAvma6j3Ak=",
+			"path": "github.com/patrickmn/sortutil",
+			"revision": "abeda66eb583fac2d8d98d3d2e6fbd5c67af7947",
+			"revisionTime": "2012-05-26T08:15:24Z"
 		},
 		{
 			"checksumSHA1": "lAbt9X69qIH5Ql7O1UCqQ2IG3Ng=",
