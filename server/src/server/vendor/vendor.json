@@ -3,25 +3,25 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "EOswc3oryg3w9p+NowzpnCRLtUc=",
+			"checksumSHA1": "Myb9r76pjn4CZ8XwqOoFrljBlTU=",
 			"path": "github.com/lib/pq",
-			"revision": "ee1442bda7bd1b6a84e913bdb421cb1874ec629d",
-			"revisionTime": "2016-05-10T22:24:21Z"
+			"revision": "e2402a7cd1e57e08a576b94cdfed36ae30366545",
+			"revisionTime": "2016-02-11T19:20:07Z"
 		},
 		{
-			"checksumSHA1": "K4XuhnpGWTFMLSDIdvDr5AH3fTw=",
+			"checksumSHA1": "xppHi82MLqVx1eyQmbhTesAEjx8=",
 			"path": "github.com/lib/pq/oid",
 			"revision": "ee1442bda7bd1b6a84e913bdb421cb1874ec629d",
 			"revisionTime": "2016-05-10T22:24:21Z"
 		},
 		{
-			"checksumSHA1": "XNYCGT0X/+ICa5mDnwAvma6j3Ak=",
+			"checksumSHA1": "PAG8pq31XPPF9nYTDg1JttFcUeU=",
 			"path": "github.com/patrickmn/sortutil",
 			"revision": "abeda66eb583fac2d8d98d3d2e6fbd5c67af7947",
 			"revisionTime": "2012-05-26T08:15:24Z"
 		},
 		{
-			"checksumSHA1": "lAbt9X69qIH5Ql7O1UCqQ2IG3Ng=",
+			"checksumSHA1": "CzLpoHWYgSP+mT3bcW/jt8epp5I=",
 			"path": "gopkg.in/robfig/cron.v2",
 			"revision": "be2e0b0deed5a68ffee390b4583a13aff8321535",
 			"revisionTime": "2015-01-07T22:02:07Z"

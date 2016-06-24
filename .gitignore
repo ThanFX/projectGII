@@ -8,6 +8,6 @@ server/src/github.com
 server/bin
 server/.cache
 *.bat
-server/src/server/server.*
+server/src/server/server*
 server/restore*
 server/dump*
