@@ -19,3 +19,6 @@ WHERE id = 'check_periods';
 SELECT value->'periods' FROM config WHERE id = 'calendar';
 
 SELECT real_time, world_time, time_speed FROM time WHERE id = 1;
+
+UPDATE public.person_health_characteristic SET
+	health = health * 2 WHERE person_id = 1;

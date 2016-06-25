@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "5QjpFrcdc5jHkzlk1l5cKeKIquw=",
+			"path": "github.com/fatih/structs",
+			"revision": "bfcf7eedca5eca84631f95fe4b46d968e0a03500",
+			"revisionTime": "2016-06-22T22:35:22Z"
+		},
+		{
 			"checksumSHA1": "Myb9r76pjn4CZ8XwqOoFrljBlTU=",
 			"path": "github.com/lib/pq",
 			"revision": "e2402a7cd1e57e08a576b94cdfed36ae30366545",
@@ -19,6 +25,12 @@
 			"path": "github.com/patrickmn/sortutil",
 			"revision": "abeda66eb583fac2d8d98d3d2e6fbd5c67af7947",
 			"revisionTime": "2012-05-26T08:15:24Z"
+		},
+		{
+			"checksumSHA1": "ofNmmhhJAxYL1Mh09iq+utdfHIM=",
+			"path": "github.com/stretchr/objx",
+			"revision": "1a9d0bb9f541897e62256577b352fdbc1fb4fd94",
+			"revisionTime": "2015-09-28T12:21:52Z"
 		},
 		{
 			"checksumSHA1": "CzLpoHWYgSP+mT3bcW/jt8epp5I=",

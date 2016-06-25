@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"strconv"
 
@@ -26,27 +25,24 @@ var (
 	calendarConfig []CalendarPeriod
 )
 
-func getWorldCalendarTime(worldTime int64) []CalendarTime {
-	cTime1 := make(map[string]string)
-	cTime := make([]CalendarTime, len(calendarConfig))
+func getWorldCalendarTime(worldTime int64) map[string]string {
+	cTime := make(map[string]string)
 	for key, _ := range calendarConfig {
 		t := int(worldTime/int64(calendarConfig[key].TimeInSeconds)) + calendarConfig[key].MinValue
-		cTime[key].Period = calendarConfig[key].PeriodLabel
-		cTime[key].Time = strconv.Itoa(t)
-		cTime1[calendarConfig[key].PeriodLabel] = strconv.Itoa(t)
+		if (calendarConfig[key].PeriodLabel == "minute" || calendarConfig[key].PeriodLabel == "hour") && t < 10 {
+			cTime[calendarConfig[key].PeriodLabel] = "0" + strconv.Itoa(t)
+		} else {
+			cTime[calendarConfig[key].PeriodLabel] = strconv.Itoa(t)
+		}
 		worldTime -= int64((t - calendarConfig[key].MinValue) * calendarConfig[key].TimeInSeconds)
 	}
-	fmt.Println(cTime1)
 	return cTime
 }
 
-func getWCTString(cTime []CalendarTime) string {
-	return cTime[0].Time + " год, " +
-		cTime[1].Time + " месяц, " +
-		cTime[2].Time + " декада, " +
-		cTime[3].Time + " день, " +
-		cTime[4].Time + ":" +
-		cTime[5].Time
+func getWCTString(cTime map[string]string) string {
+	return cTime["year"] + " год, " + cTime["month"] + " месяц, " +
+		cTime["ten_day"] + " декада, " + cTime["day"] + " день, " +
+		cTime["hour"] + ":" + cTime["minute"]
 }
 
 func getCalendar() {
