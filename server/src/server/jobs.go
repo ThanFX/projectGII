@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/robfig/cron"
+	"github.com/stretchr/objx"
 )
 
 type StateSpeed struct {
@@ -34,17 +35,16 @@ type CheckPeriods struct {
 }
 
 var (
-	stateSpeeds []StateSpeed
+	stateSpeeds objx.Map
 )
 
 func init_check() {
 	var res string
-	err := db.QueryRow("SELECT value->'states' FROM config WHERE id = 'state_speed';").Scan(&res)
+	err := db.QueryRow("SELECT value FROM config WHERE id = 'state_speed';").Scan(&res)
 	if err != nil {
 		log.Fatal("Ошибка запроса скоростей изменений характеристик в БД", err)
 	}
-	bytes := []byte(res)
-	err = json.Unmarshal(bytes, &stateSpeeds)
+	stateSpeeds, err = objx.FromJSON(res)
 	if err != nil {
 		log.Fatal("Ошибка парсинга структуры скоростей изменений характеристик", err)
 	}
@@ -109,13 +109,16 @@ func hts_job() {
 			fatigue = GREATEST(0.0, fatigue + ($3 * (($5 - last_htfs_update) / 3600.0))),
 			somnolency = GREATEST(0.0, somnolency + ($4 * (($5 - last_htfs_update) / 3600.0))),
 			last_htfs_update = $5
+		WHERE state = 1
 		;`,
-		5,
-		10,
-		-10,
-		-20,
+		stateSpeeds.Get("sleep.hunger").Float64(),
+		stateSpeeds.Get("sleep.thirst").Float64(),
+		stateSpeeds.Get("sleep.fatigue").Float64(),
+		stateSpeeds.Get("sleep.somnolency").Float64(),
 		nowWorldTime)
 	if err != nil {
 		log.Fatal("Ошибка обновления характерстик: ", err)
+	} else {
+		fmt.Println("Характеристики успешно обновлены")
 	}
 }
