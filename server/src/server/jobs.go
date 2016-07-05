@@ -91,11 +91,50 @@ func state_job() {
 	cTime := getWorldCalendarTime(nowWorldTime)
 	fmt.Println("Проверка состояний началась в ", getWCTString(cTime))
 
+	cH, err := strconv.Atoi(cTime["hour"])
+	if err != nil {
+		log.Fatal("Ошибка парсинга времени: ", err)
+	}
+
+	if cH < 6 || cH >= 20 {
+		_, err := db.Exec(`
+		UPDATE person_health_characteristic SET state = $1 WHERE
+			somnolency > 40.0;
+		`, 1)
+		if err != nil {
+			log.Fatal("Ошибка засыпания персонажей: ", err)
+		}
+	}
+	if cH >= 6 && cH < 20 {
+		_, err := db.Exec(`
+		UPDATE person_health_characteristic SET state = $1 WHERE
+			somnolency <= 6.0;
+		`, 5)
+		if err != nil {
+			log.Fatal("Ошибка пробуждения персонажей: ", err)
+		}
+	}
 }
 
 func ed_job() {
 	cTime := getWorldCalendarTime(nowWorldTime)
 	fmt.Println("Едим и пьём в ", getWCTString(cTime))
+
+	_, err := db.Exec(`
+		UPDATE person_health_characteristic SET thirst = $1 WHERE
+			thirst >= 6.0 AND state != $2;
+		`, 0.0, 1)
+	if err != nil {
+		log.Fatal("Ошибка утоления жажды: ", err)
+	}
+
+	_, err = db.Exec(`
+		UPDATE person_health_characteristic SET thirst = $1, hunger = $2 WHERE
+			hunger >= 3.0 AND state != $3;
+		`, 0.0, 0.0, 1)
+	if err != nil {
+		log.Fatal("Ошибка утоления голода: ", err)
+	}
 }
 
 func hts_job() {
@@ -117,8 +156,23 @@ func hts_job() {
 		stateSpeeds.Get("sleep.somnolency").Float64(),
 		nowWorldTime)
 	if err != nil {
-		log.Fatal("Ошибка обновления характерстик: ", err)
-	} else {
-		fmt.Println("Характеристики успешно обновлены")
+		log.Fatal("Ошибка обновления характерстик спящих персонажей: ", err)
+	}
+	_, err = db.Exec(`
+		UPDATE person_health_characteristic SET
+			hunger = hunger + ($1 * (($5 - last_htfs_update) / 3600.0)),
+			thirst = thirst + ($2 * (($5 - last_htfs_update) / 3600.0)),
+			fatigue = GREATEST(0.0, fatigue + ($3 * (($5 - last_htfs_update) / 3600.0))),
+			somnolency = GREATEST(0.0, somnolency + ($4 * (($5 - last_htfs_update) / 3600.0))),
+			last_htfs_update = $5
+		WHERE state = 5
+		;`,
+		stateSpeeds.Get("chores.hunger").Float64(),
+		stateSpeeds.Get("chores.thirst").Float64(),
+		stateSpeeds.Get("chores.fatigue").Float64(),
+		stateSpeeds.Get("chores.somnolency").Float64(),
+		nowWorldTime)
+	if err != nil {
+		log.Fatal("Ошибка обновления характерстик бодрствующих персонажей: ", err)
 	}
 }

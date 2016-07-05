@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+/*
 `
 CREATE TABLE test_char
 (
@@ -19,8 +20,7 @@ CREATE TABLE test_char
     last_htfs_update INTEGER DEFAULT 0 NOT NULL
 );
 `
-
-
+*/
 
 func test_insert() {
 	const (
