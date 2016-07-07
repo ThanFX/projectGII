@@ -3,6 +3,18 @@ import { ReactiveVar } from 'meteor/reactive-var';
 
 import './main.html';
 
+
+Template.time.onCreated(() => {
+    this.tim = () => {return 0;};
+});
+
+Template.time.helpers({
+    tim: function() {
+        return time.select('time.id').fetch();
+    }
+});
+
+
 Template.hello.onCreated(function helloOnCreated() {
   // counter starts at 0
   this.counter = new ReactiveVar(0);
