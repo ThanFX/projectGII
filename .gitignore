@@ -1,6 +1,7 @@
 # Created by .ignore support plugin (hsz.mobi)
 .idea
 client/.meteor
+client/node_modules/
 server/pkg
 server/src/server/vendor/github.com
 server/src/server/vendor/gopkg.in
