@@ -5,6 +5,8 @@
     "start": "meteor run"
   },
   "dependencies": {
-    "meteor-node-stubs": "~0.2.0"
+    "knex": "^0.11.7",
+    "meteor-node-stubs": "~0.2.0",
+    "pg": "^6.0.1"
   }
 }

@@ -1,9 +1,17 @@
 import { Template } from 'meteor/templating';
-import { ReactiveVar } from 'meteor/reactive-var';
+//import { ReactiveVar } from 'meteor/reactive-var';
 
 import './main.html';
 
 
+Template.timess.helpers({
+    times: function () {
+        return times.reactive();
+    }
+});
+
+
+/*
 Template.time.onCreated(() => {
     this.tim = () => {return 0;};
 });
@@ -32,3 +40,4 @@ Template.hello.events({
     instance.counter.set(instance.counter.get() + 1);
   },
 });
+*/
