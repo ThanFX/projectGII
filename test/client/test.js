@@ -55,11 +55,21 @@ Template.player.events({
 });
 
 Template.timer.helpers({
-   world_time: function () {
-       console.log(this.world_time);
+    times: function () {
+       //console.log(this.world_time);
+       /*
        Object.keys(timer).forEach(function (item) {
            console.log(item);
        });
-       return timer[0].world_time;
-   } 
+       */
+
+       return cTime.reactive();
+    },
+    worldTime: function () {
+        cTime.depend();
+        var time = cTime.filter(function(time){
+            return time.id == 1;
+        });
+        return time.length && time[0].world_time;
+    }
 });

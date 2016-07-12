@@ -5,14 +5,31 @@
 </head>
 
 <body>
-{{> timer}}
+
 <div class="outer">
     <div class="logo"></div>
     <h1 class="title">Leaderboard</h1>
     <div class="subtitle">Select a scientist to give them points</div>
     {{> leaderboard}}
+    <br>
+    <span>{{> timer}}</span>
 </div>
 </body>
+
+<template name="player">
+    <li class="player {{selected}}">
+        <span class="name">{{name}}</span>
+        <span class="score">{{score}}</span>
+    </li>
+</template>
+
+<template name="timer">
+    {{#each times}}
+        <span class="world_time">{{time_speed}}</span>
+    {{/each}}
+    <br>
+    {{worldTime}}
+</template>
 
 <template name="leaderboard">
     <ol class="leaderboard">
@@ -29,15 +46,4 @@
     {{else}}
         <div class="message">Click a player to select</div>
     {{/if}}
-</template>
-
-<template name="player">
-    <li class="player {{selected}}">
-        <span class="name">{{name}}</span>
-        <span class="score">{{score}}</span>
-    </li>
-</template>
-
-<template name="timer">
-    <span>{{world_time}}</span>
 </template>

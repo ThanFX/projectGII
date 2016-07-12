@@ -8,4 +8,4 @@ players = new PgSubscription('allPlayers');
 //  use case with arguments and manually authored triggers
 myScore = new PgSubscription('playerScore', 'Maxwell');
 
-timer = new PgSubscription('worldTime');
+cTime = new PgSubscription('worldTime');
