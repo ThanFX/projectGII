@@ -22,6 +22,10 @@ myScore.addEventListener('updated', function(diff, data){
     // Close connections on exit (ctrl + c)
     process.on('SIGINT', closeAndExit);
 
+    Meteor.publish('worldTime', function () {
+        return liveDb.select('SELECT * FROM time WHERE id = 1');
+    });
+
     Meteor.publish('allPlayers', function(){
         // No triggers specified, the package will automatically refresh the
         // query on any change to the dependent tables (just players in this case).

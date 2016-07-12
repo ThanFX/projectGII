@@ -5,6 +5,7 @@
 </head>
 
 <body>
+{{> timer}}
 <div class="outer">
     <div class="logo"></div>
     <h1 class="title">Leaderboard</h1>
@@ -35,4 +36,8 @@
         <span class="name">{{name}}</span>
         <span class="score">{{score}}</span>
     </li>
+</template>
+
+<template name="timer">
+    <span>{{world_time}}</span>
 </template>

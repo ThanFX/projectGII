@@ -53,3 +53,13 @@ Template.player.events({
         Session.set("selectedPlayer", this.id);
     }
 });
+
+Template.timer.helpers({
+   world_time: function () {
+       console.log(this.world_time);
+       Object.keys(timer).forEach(function (item) {
+           console.log(item);
+       });
+       return timer[0].world_time;
+   } 
+});
