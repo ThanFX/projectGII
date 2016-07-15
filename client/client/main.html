@@ -1,30 +1,49 @@
 <head>
-  <title>client</title>
+    <title>Leaderboard</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no">
+    <!--<link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600' rel='stylesheet' type='text/css'>-->
 </head>
 
 <body>
-  <h1>Welcome to Meteor!</h1>
 
-  {{> hello}}
-  {{> info}}
-  {{> time}}
+<div class="outer">
+    <div class="logo"></div>
+    <h1 class="title">Leaderboard</h1>
+    <div class="subtitle">Select a scientist to give them points</div>
+    {{> leaderboard}}
+    <br>
+    <span>{{> timer}}</span>
+</div>
 </body>
 
-<template name="timess">
-    <span>Время: {{times}}</span>
+<template name="player">
+    <li class="player {{selected}}">
+        <span class="name">{{name}}</span>
+        <span class="score">{{score}}</span>
+    </li>
 </template>
 
-<template name="hello">
-  <button>Click Me</button>
-  <p>You've pressed the button {{counter}} times.</p>
+<template name="timer">
+    {{#each times}}
+        <span class="world_time">{{time_speed}}</span>
+    {{/each}}
+    <br>
+    {{worldTime}}
 </template>
 
-<template name="info">
-  <h2>Learn Meteor!</h2>
-  <ul>
-    <li><a href="https://www.meteor.com/try" target="_blank">Do the Tutorial</a></li>
-    <li><a href="http://guide.meteor.com" target="_blank">Follow the Guide</a></li>
-    <li><a href="https://docs.meteor.com" target="_blank">Read the Docs</a></li>
-    <li><a href="https://forums.meteor.com" target="_blank">Discussions</a></li>
-  </ul>
+<template name="leaderboard">
+    <ol class="leaderboard">
+        {{#each players}}
+            {{> player}}
+        {{/each}}
+    </ol>
+
+    {{#if selectedName}}
+        <div class="details">
+            <div class="name">{{selectedName}}</div>
+            <button class="inc">Add 5 points</button>
+        </div>
+    {{else}}
+        <div class="message">Click a player to select</div>
+    {{/if}}
 </template>

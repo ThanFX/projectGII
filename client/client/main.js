@@ -1,43 +1,75 @@
-import { Template } from 'meteor/templating';
-//import { ReactiveVar } from 'meteor/reactive-var';
+/**
+ * Created by Than on 09.07.2016.
+ */
+// Provide a client side stub for latency compensation
+Meteor.methods({
+    'incScore': function(id, amount){
+        var originalIndex;
+        players.forEach(function(player, index){
+            if(player.id === id){
+                originalIndex = index;
+                players[index].score += amount;
+                players.changed();
+            }
+        });
 
-import './main.html';
+        // Reverse changes if needed (due to resorting) on update
+        players.addEventListener('update.incScoreStub', function(index, msg){
+            if(originalIndex !== index){
+                players[originalIndex].score -= amount;
+            }
+            players.removeEventListener('update.incScoreStub');
+        });
+    }
+});
 
+Template.leaderboard.helpers({
+    players: function () {
+        return players.reactive();
+    },
+    selectedName: function () {
+        players.depend();
+        var player = players.filter(function(player){
+            return player.id === Session.get("selectedPlayer");
+        });
+        return player.length && player[0].name;
+    }
+});
 
-Template.timess.helpers({
+Template.leaderboard.events({
+    'click .inc': function () {
+        Meteor.call('incScore', Session.get("selectedPlayer"), 5);
+    }
+});
+
+Template.player.helpers({
+    selected: function () {
+        return Session.equals("selectedPlayer", this.id) ? "selected" : '';
+    }
+});
+
+Template.player.events({
+    'click': function () {
+        Session.set("selectedPlayer", this.id);
+    }
+});
+
+Template.timer.helpers({
     times: function () {
-        return times.reactive();
+        //console.log(this.world_time);
+        /*
+         Object.keys(timer).forEach(function (item) {
+         console.log(item);
+         });
+         */
+
+        return cTime.reactive();
+    },
+    worldTime: function () {
+        cTime.depend();
+        var time = cTime.filter(function(time){
+            return time.id == 1;
+        });
+        return time.length && time[0].world_time;
     }
 });
-
-
-/*
-Template.time.onCreated(() => {
-    this.tim = () => {return 0;};
-});
-
-Template.time.helpers({
-    tim: function() {
-        return time.select('time.id').fetch();
-    }
-});
-
-
-Template.hello.onCreated(function helloOnCreated() {
-  // counter starts at 0
-  this.counter = new ReactiveVar(0);
-});
-
-Template.hello.helpers({
-  counter() {
-    return Template.instance().counter.get();
-  },
-});
-
-Template.hello.events({
-  'click button'(event, instance) {
-    // increment the counter when button is clicked
-    instance.counter.set(instance.counter.get() + 1);
-  },
-});
-*/
