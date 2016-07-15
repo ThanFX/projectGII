@@ -1,6 +1,48 @@
 /**
  * Created by Than on 09.07.2016.
  */
+
+var wct = {};
+
+function getWorldTime(cTime) {
+    cTime.depend();
+    var time = cTime.filter(function(t){
+        return t.world_time;
+    });
+    return time.length && time[0].world_time;
+}
+
+function getWorldCalendarTime(worldTime) {
+    getData(Meteor.call, 'getWCTString', worldTime).then(
+        time => {
+            wct = time;
+            return new Promise((resolve) => resolve());
+        }
+    ).catch(
+        error => {
+            console.log(error);
+        }
+    );
+}
+
+
+
+Template.timer.helpers({
+    times: function() {
+        return cTime.reactive();
+    },
+    worldTime: function() {
+        return getWorldTime(cTime);
+    },
+    worldCalendarTime: function() {
+        getWorldCalendarTime(getWorldTime(cTime));
+        if(wct) {
+            return wct.hour + ":" + wct.minute;
+        }
+    }
+});
+
+
 /*
 // Provide a client side stub for latency compensation
 Meteor.methods({
@@ -55,16 +97,3 @@ Template.player.events({
     }
 });
 */
-
-Template.timer.helpers({
-    times: function () {
-        return cTime.reactive();
-    },
-    worldTime: function () {
-        cTime.depend();
-        var time = cTime.filter(function(t){
-            return t.world_time;
-        });
-        return time.length && time[0].world_time;
-    }
-});

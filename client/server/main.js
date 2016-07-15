@@ -1,39 +1,24 @@
-// Meteor Leaderboard Example with PostgreSQL backend
+getData(getCalendar).then(
+    periods => {
+        calendar = periods;
+        // Пустой промис, чтобы гарантированно дождаться выполнения текущего шага + нотификация об успешности
+        return new Promise((resolve) => {
+            console.log("Календарь успешно загружен");
+            return resolve();
+        });
+    }
+).then().catch(
+    error => {
+        console.log(error);
+    }
+);
+
+
 /*
 myScore.addEventListener('updated', function(diff, data){
     data.length && console.log(data[0].score);
 });
-*/
 
-function getWorldTime() {
-    cTime.depend();
-    var time = cTime.filter(function(t){
-        return t.world_time;
-    });
-    return time.length && time[0].world_time;
-}
-
-
-// XXX: Update this connection string to match your configuration!
-// When using an externally configured PostgreSQL server, the default port
-//  is 5432.
-var CONN_STR = 'postgres://' + 'postgres' + ':postgres@127.0.0.1:5432/postgres';
-var liveDb = new LivePg(CONN_STR, 'world');
-
-var closeAndExit = function() {
-    // Cleanup removes triggers and functions used to transmit updates
-    liveDb.cleanup(process.exit);
-};
-// Close connections on hot code push
-process.on('SIGTERM', closeAndExit);
-// Close connections on exit (ctrl + c)
-process.on('SIGINT', closeAndExit);
-
-Meteor.publish('worldTime', function () {
-    return liveDb.select('SELECT world_time FROM time WHERE id = 1');
-});
-
-/*
 Meteor.publish('allPlayers', function(){
     // No triggers specified, the package will automatically refresh the
     // query on any change to the dependent tables (just players in this case).
