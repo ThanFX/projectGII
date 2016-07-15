@@ -1,6 +1,7 @@
 /**
  * Created by Than on 09.07.2016.
  */
+/*
 // Provide a client side stub for latency compensation
 Meteor.methods({
     'incScore': function(id, amount){
@@ -53,22 +54,16 @@ Template.player.events({
         Session.set("selectedPlayer", this.id);
     }
 });
+*/
 
 Template.timer.helpers({
     times: function () {
-        //console.log(this.world_time);
-        /*
-         Object.keys(timer).forEach(function (item) {
-         console.log(item);
-         });
-         */
-
         return cTime.reactive();
     },
     worldTime: function () {
         cTime.depend();
-        var time = cTime.filter(function(time){
-            return time.id == 1;
+        var time = cTime.filter(function(t){
+            return t.world_time;
         });
         return time.length && time[0].world_time;
     }

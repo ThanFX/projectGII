@@ -1,17 +1,24 @@
 // Meteor Leaderboard Example with PostgreSQL backend
-
+/*
 myScore.addEventListener('updated', function(diff, data){
     data.length && console.log(data[0].score);
 });
+*/
 
+function getWorldTime() {
+    cTime.depend();
+    var time = cTime.filter(function(t){
+        return t.world_time;
+    });
+    return time.length && time[0].world_time;
+}
 
 
 // XXX: Update this connection string to match your configuration!
 // When using an externally configured PostgreSQL server, the default port
 //  is 5432.
-var CONN_STR =
-    'postgres://' + 'postgres' + ':postgres@127.0.0.1:5432/postgres';
-var liveDb = new LivePg(CONN_STR, 'leaderboard_example');
+var CONN_STR = 'postgres://' + 'postgres' + ':postgres@127.0.0.1:5432/postgres';
+var liveDb = new LivePg(CONN_STR, 'world');
 
 var closeAndExit = function() {
     // Cleanup removes triggers and functions used to transmit updates
@@ -23,9 +30,10 @@ process.on('SIGTERM', closeAndExit);
 process.on('SIGINT', closeAndExit);
 
 Meteor.publish('worldTime', function () {
-    return liveDb.select('SELECT * FROM time WHERE id = 1');
+    return liveDb.select('SELECT world_time FROM time WHERE id = 1');
 });
 
+/*
 Meteor.publish('allPlayers', function(){
     // No triggers specified, the package will automatically refresh the
     // query on any change to the dependent tables (just players in this case).
@@ -70,3 +78,4 @@ Meteor.methods({
         });
     }
 });
+*/
