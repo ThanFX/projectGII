@@ -24,13 +24,14 @@ Meteor.methods({
     'getWCTString': function(worldSeconds) {
         var worldTime = {};
         calendar.forEach((period) => {
-            if (period.timeInSeconds > worldSeconds) {
-                worldTime[period.periodLabel] = 0 + period.minValue;
+            var t = Math.floor(worldSeconds / period.timeInSeconds) + period.minValue;
+            if ((period.periodLabel == 'minute' || period.periodLabel == 'hour') && t < 10) {
+                worldTime[period.periodLabel] = '0' + t;
             } else {
-                worldTime[period.periodLabel] = Math.floor(worldSeconds / period.timeInSeconds);
-                worldSeconds -= (worldTime[period.periodLabel] * period.timeInSeconds);
-                worldTime[period.periodLabel] += +period.minValue;
+                worldTime[period.periodLabel] = t;
             }
+            worldSeconds -= ((t - period.minValue) * period.timeInSeconds);
+
         });
         return worldTime;
     }

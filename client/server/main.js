@@ -7,7 +7,7 @@ getData(getCalendar).then(
             return resolve();
         });
     }
-).then().catch(
+).catch(
     error => {
         console.log(error);
     }
