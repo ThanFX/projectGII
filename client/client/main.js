@@ -49,6 +49,13 @@ Template.timer.helpers({
 });
 
 
+Template.allPersons.helpers({
+    persons: function() {
+        return Persons.reactive();
+    }
+});
+
+
 /*
 // Provide a client side stub for latency compensation
 Meteor.methods({

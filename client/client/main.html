@@ -7,10 +7,25 @@
 <body>
 
 <div class="outer">
-    <span>{{> timer}}</span>
+    {{> timer }}
+    <br>
+    {{> allPersons }}
+
 </div>
 </body>
 
 <template name="timer">
     {{worldCalendarTime}}
+</template>
+
+<template name="allPersons">
+    {{#each persons }}
+        {{> person }}
+    {{/each}}
+</template>
+
+<template name="person">
+    <span>{{id}}</span>
+    <span>{{name}}</span>
+    <br>
 </template>
