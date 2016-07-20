@@ -182,3 +182,16 @@ body {
         background-color: #fefff4;
     }
 }
+
+.person {
+    display: block;
+    padding: 10px;
+    border: 1px solid dimgray;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+.person-charasteristics {
+    display: none;
+}

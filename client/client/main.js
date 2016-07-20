@@ -55,6 +55,19 @@ Template.allPersons.helpers({
     }
 });
 
+Template.characteristics.helpers({
+
+});
+
+Template.person.events({
+    'click': function(event, template) {
+        if(template.$('.person-charasteristics').css('display') == 'none') {
+            template.$('.person-charasteristics').animate({height: 'show'}, 200);
+        } else {
+            template.$('.person-charasteristics').animate({height: 'hide'}, 100);
+        }
+    }
+});
 
 /*
 // Provide a client side stub for latency compensation

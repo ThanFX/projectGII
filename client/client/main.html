@@ -25,7 +25,22 @@
 </template>
 
 <template name="person">
-    <span>{{id}}</span>
-    <span>{{name}}</span>
-    <br>
+    <div class="person">
+        <span>{{name}}</span>
+        <div class="person-charasteristics">
+            Набор характеристик
+            <br>
+            {{> characteristics}}
+            <br>
+            Конец
+        </div>
+    </div>
+</template>
+
+<template name="characteristics">
+    <span>{{ state }}</span>
+    <span>{{ hunger }}</span>
+    <span>{{ thirst }}</span>
+    <span>{{ fatigue }}</span>
+    <span>{{ somnolency }}</span>
 </template>
