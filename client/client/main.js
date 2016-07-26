@@ -69,6 +69,24 @@ Template.person.events({
     }
 });
 
+
+newTime = new Mongo.Collection('time');
+
+Template.newTime.onCreated(function () {
+    this.subscribe('newWorldTime');
+});
+
+Template.newTime.helpers({
+    newTime2: function () {
+        // Still need to sort client-side since record order is not preserved
+        return newTime.find({_id: 1});
+    },
+});
+
+
+
+
+
 /*
 // Provide a client side stub for latency compensation
 Meteor.methods({

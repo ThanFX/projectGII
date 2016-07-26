@@ -6,6 +6,7 @@
   },
   "dependencies": {
     "meteor-node-stubs": "~0.2.0",
-    "pg": "^6.0.1"
+    "pg": "^6.0.1",
+    "pg-live-select": "git+https://github.com/Richie765/pg-live-select.git"
   }
 }
