@@ -70,6 +70,9 @@ Template.person.events({
 });
 
 
+
+
+/*
 newTime = new Mongo.Collection('time');
 
 Template.newTime.onCreated(function () {
@@ -82,9 +85,7 @@ Template.newTime.helpers({
         return newTime.find({_id: 1});
     },
 });
-
-
-
+*/
 
 
 /*

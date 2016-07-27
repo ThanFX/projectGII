@@ -1,7 +1,10 @@
 /**
  * Created by Than on 27.07.2016.
+ * Try this library after successully compilation node-libpq!!!
  */
-import LivePg from 'pg-live-select';
+
+/*
+
 import pgPromise from 'pg-promise';
 
 // Update this connection string to match your configuration!
@@ -118,7 +121,7 @@ function select(...param) {
 
 // Exports
 
-module.exports = {
+mpg = {
     select: select,
     live_select: live_select,
 
@@ -143,3 +146,5 @@ module.exports = {
     task(...param) { return Promise.await(db.task(...param)) },
     tx(...param) { return Promise.await(db.tx(...param)) },
 };
+
+    */

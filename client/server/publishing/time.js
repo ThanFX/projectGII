@@ -1,5 +1,4 @@
-mpg = require('meteor-pg-live');
-
+/*
 Meteor.publish('newWorldTime', function() {
     let sql = `SELECT 1 AS _id, world_time FROM time WHERE id = 1`;
 
@@ -9,7 +8,7 @@ Meteor.publish('newWorldTime', function() {
     // Alternative method, produces less flicker on the initial resultset
     mpg.live_select(this, 'time', sql, function(trig) { return true });
 });
-
+*/
 
 Meteor.publish('worldTime', function () {
     return liveDb.select('SELECT world_time FROM time WHERE id = 1');
