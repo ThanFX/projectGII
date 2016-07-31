@@ -16,3 +16,13 @@ CREATE TABLE IF NOT EXISTS public.time
     real_time INTEGER,
     world_time INTEGER
 );
+
+CREATE TABLE public.world_map
+(
+    chunk_id SERIAL PRIMARY KEY NOT NULL,
+    x INT DEFAULT 0 NOT NULL,
+    y INT DEFAULT 0 NOT NULL,
+    is_explored BOOLEAN DEFAULT FALSE  NOT NULL,
+    terrains JSONB DEFAULT '{"terrains":[]}' NOT NULL
+);
+CREATE UNIQUE INDEX world_map_chunk_id_uindex ON public.world_map (chunk_id);
