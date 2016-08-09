@@ -28,3 +28,8 @@ body {
 .person-charasteristics {
     display: none;
 }
+
+.chunk {
+    width: 128px;
+    height: 128px;
+}
