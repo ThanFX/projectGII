@@ -1,14 +1,9 @@
 <template name="worldMap">
-    <div class="chunk">
-        <img src="resources/river_3_S-N.png">
-    </div>
-    <div class="chunk">
-        <img src="resources/river_3_S-N.png">
-    </div>
-    <div class="chunk">
-        <img src="resources/river_3_S-N.png">
-    </div>
-    <div class="chunk">
-        <img src="resources/river_3_S-N.png">
-    </div>
+    {{#each worldMaps}}
+        {{> chunk}}
+    {{/each}}
+</template>
+
+<template name="chunk">
+    <div class="chunk"></div>
 </template>

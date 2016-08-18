@@ -1,3 +1,4 @@
-cTime = new PgSubscription('worldTime');
-Persons = new PgSubscription('allPersons');
-Characteristics = new PgSubscription('personsCh', 1);
+cTime =             new PgSubscription('worldTime');
+Persons =           new PgSubscription('allPersons');
+Characteristics =   new PgSubscription('personsCh');
+WorldMap =          new PgSubscription('worldMap');

@@ -5,7 +5,9 @@ Template.person.helpers({
     characteristics: function () {
         var id = this.id;
         Characteristics.depend();
+        //console.log(Characteristics);
         var ch = Characteristics.filter(function(item){
+            //console.log(item);
             return item._index == id;
         });
         return ch.length && ch;
