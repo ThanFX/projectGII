@@ -1,7 +1,4 @@
-* {
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
-}
+
 
 body {
     font-family: 'Source Sans Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -13,7 +10,7 @@ body {
 
 .outer {
     margin: 0 auto;
-    max-width: 480px;
+    max-width: 420px;
 }
 
 .person {
@@ -29,7 +26,21 @@ body {
     display: none;
 }
 
+.map {
+    margin: 3em auto;
+    text-align: center;
+}
+
+.map-row {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+}
+
 .chunk {
     width: 128px;
     height: 128px;
+    border: 1px solid black;
+    margin: 0;
+    padding: 0;
 }

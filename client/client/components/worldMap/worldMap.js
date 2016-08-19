@@ -15,19 +15,18 @@ function getChunk(i, j) {
 }
 
 Template.worldMap.helpers({
-    chunk: function () {
-        return true;
-    }
+
 });
 
 Template.worldMap.onCreated(() => {
-    this.$('.chunk').css({
-        'backgroundImage': 'url(resources/forest.png)'
-    });
     for(let i = 0; i < map.length; i++){
         map[i] = new Array(mapColumns);
         for(let j = 0; j < map[0].length; j++) {
             map[i][j] = getChunk(i, j);
         }
     }
+    this.$('.chunk').css({
+        'backgroundImage': 'url(resources/forest.png)'
+    });
+    console.log(this.$('.chunk'));
 });
