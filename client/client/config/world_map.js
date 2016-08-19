@@ -198,11 +198,22 @@ WorldMap = [
         y: -7,
         is_explored: true,
         "terrains": {
-            "roads": [{"size": 1, "onRiver": {"0": "bottom"}, "direction": "W-C"}, {
-                "size": 2,
-                "onRiver": {"0": "across"},
-                "direction": "S-N"
-            }],
+            "roads": [
+                {
+                    "size": 1,
+                    "onRiver": {
+                        "0": "bottom"
+                    },
+                    "direction": "W-C"
+                },
+                {
+                    "size": 2,
+                    "onRiver": {
+                        "0": "across"
+                    },
+                    "direction": "S-N"
+                }
+            ],
             "urban": {
                 "type": "village",
                 "onRoad": {"0": "across", "1": "across"},
@@ -238,10 +249,30 @@ WorldMap = [
         y: -9,
         is_explored: true,
         "terrains": {
-            "hill": {"type": "", "quality": 2, "passability": 0.7, "percentArea": 60.0},
-            "roads": [{"size": 2, "direction": "S-N"}],
-            "forest": {"type": "", "quality": 1, "passability": 0.9, "percentArea": 10},
-            "meadow": {"type": "", "quality": 2, "passability": 0.9, "percentArea": 30.0}
+            "hill": {
+                "type": "",
+                "quality": 2,
+                "passability": 0.7,
+                "percentArea": 60.0
+            },
+            "roads": [
+                {
+                    "size": 2,
+                    "direction": "S-N"
+                }
+            ],
+            "forest": {
+                "type": "",
+                "quality": 1,
+                "passability": 0.9,
+                "percentArea": 10
+            },
+            "meadow": {
+                "type": "",
+                "quality": 2,
+                "passability": 0.9,
+                "percentArea": 30.0
+            }
         }
     },
     {
@@ -251,7 +282,7 @@ WorldMap = [
         "terrains": {
             "swamp": {"type": "", "quality": 2, "passability": 0.4, "percentArea": 10.0},
             "forest": {"type": "", "quality": 4, "passability": 0.5, "percentArea": 85.0},
-            "rivers": [{"size": 5, "bridge": 0, "quality": 3, "direction": "E-N", "percentArea": 5.0}]
+            "rivers": [{"size": 3, "bridge": 0, "quality": 3, "direction": "E-N", "percentArea": 5.0}]
         }
     },
     {
@@ -296,9 +327,27 @@ WorldMap = [
         y: -5,
         is_explored: true,
         "terrains": {
-            "swamp": {"type": "", "quality": 3, "passability": 0.3, "percentArea": 30.0},
-            "forest": {"type": "", "quality": 4, "passability": 0.5, "percentArea": 65.0},
-            "rivers": [{"size": 5, "bridge": 0, "quality": 3, "direction": "S-W", "percentArea": 5.0}]
+            "swamp": {
+                "type": "",
+                "quality": 3,
+                "passability": 0.3,
+                "percentArea": 30.0
+            },
+            "forest": {
+                "type": "",
+                "quality": 4,
+                "passability": 0.5,
+                "percentArea": 65.0
+            },
+            "rivers": [
+                {
+                    "size": 3,
+                    "bridge": 0,
+                    "quality": 3,
+                    "direction": "S-W",
+                    "percentArea": 5.0
+                }
+            ]
         }
     },
     {
@@ -308,7 +357,7 @@ WorldMap = [
         "terrains": {
             "swamp": {"type": "", "quality": 1, "passability": 0.4, "percentArea": 5.0},
             "forest": {"type": "", "quality": 4, "passability": 0.5, "percentArea": 90.0},
-            "rivers": [{"size": 5, "bridge": 0, "quality": 3, "direction": "S-N", "percentArea": 5.0}]
+            "rivers": [{"size": 3, "bridge": 0, "quality": 3, "direction": "S-N", "percentArea": 5.0}]
         }
     },
     {
@@ -318,7 +367,7 @@ WorldMap = [
         "terrains": {
             "forest": {"type": "", "quality": 3, "passability": 0.6, "percentArea": 90.0},
             "meadow": {"type": "", "quality": 2, "passability": 0.9, "percentArea": 4.0},
-            "rivers": [{"size": 5, "bridge": 0, "quality": 3, "direction": "S-N", "percentArea": 5.0}, {
+            "rivers": [{"size": 3, "bridge": 0, "quality": 3, "direction": "S-N", "percentArea": 5.0}, {
                 "size": 1,
                 "bridge": 0,
                 "quality": 1,
@@ -334,7 +383,7 @@ WorldMap = [
         "terrains": {
             "forest": {"type": "", "quality": 3, "passability": 0.6, "percentArea": 90.0},
             "meadow": {"type": "", "quality": 2, "passability": 0.9, "percentArea": 5.0},
-            "rivers": [{"size": 5, "bridge": 0, "quality": 3, "direction": "S-N", "percentArea": 5.0}]
+            "rivers": [{"size": 3, "bridge": 0, "quality": 3, "direction": "S-N", "percentArea": 5.0}]
         }
     },
     {
@@ -342,9 +391,27 @@ WorldMap = [
         y: -9,
         is_explored: true,
         "terrains": {
-            "forest": {"type": "", "quality": 3, "passability": 0.6, "percentArea": 90.0},
-            "meadow": {"type": "", "quality": 2, "passability": 0.9, "percentArea": 5.0},
-            "rivers": [{"size": 5, "bridge": 0, "quality": 3, "direction": "S-N", "percentArea": 5.0}]
+            "forest": {
+                "type": "",
+                "quality": 3,
+                "passability": 0.6,
+                "percentArea": 90.0
+            },
+            "meadow": {
+                "type": "",
+                "quality": 2,
+                "passability": 0.9,
+                "percentArea": 5.0
+            },
+            "rivers": [
+                {
+                    "size": 3,
+                    "bridge": 0,
+                    "quality": 3,
+                    "direction": "S-N",
+                    "percentArea": 5.0
+                }
+            ]
         }
     }
 ];

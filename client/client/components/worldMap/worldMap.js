@@ -17,7 +17,7 @@ function getChunk(x, y) {
 function getMainTerrain(chunk) {
     var majorTerrains = '';
     var m = 0;
-    for(var key in chunk.terrains){
+    for(let key in chunk.terrains){
         if (!chunk.terrains.hasOwnProperty(key)) continue;
         if(key != 'urban' && key != 'roads' && key != 'rivers'){
             if (m < +chunk.terrains[key].percentArea) {
@@ -29,11 +29,28 @@ function getMainTerrain(chunk) {
     return majorTerrains;
 }
 
+function getChunkRivers(chunk) {
+    let isRiver = !!('rivers' in chunk.terrains);
+    if(!isRiver) {
+        return false;
+    }
+    let rivers = [];
+
+    for(let i = 0; i < chunk.terrains.rivers.length; i++){
+        let river = {};
+        river.size = chunk.terrains.rivers[i].size;
+        river.direction = chunk.terrains.rivers[i].direction;
+        river.bridge = chunk.terrains.rivers[i].bridge;
+        rivers.push(river);
+    }
+    return rivers;
+}
+
 Template.chunk.helpers({
     data: function() {
         let x = map[this.row][this.col].x;
         let y = map[this.row][this.col].y;
-        return 'x = ' + x + ', y = ' + y;
+        //return 'x = ' + x + ', y = ' + y;
     }
 });
 
@@ -42,12 +59,22 @@ Template.worldMap.onRendered(()=>{
         let curChunk = map[+$(item).attr("data-row")][+$(item).attr("data-col")];
         let mainTerrain = getMainTerrain(curChunk);
         let mainTerrainFile = 'url(resources/' + mainTerrain + '.png)';
-
-        
+        var rivers = getChunkRivers(curChunk);
 
         $(item).css({
             'backgroundImage': mainTerrainFile
         });
+
+        if(rivers) {
+           for(i = 0; i < rivers.length; i++) {
+               let riverFileName = 'resources/river_' + rivers[i].size +
+                       '_' + rivers[i].direction + '.png';
+               let curImg = $("<img>");
+               curImg.prop("src", riverFileName);
+               curImg.css({'z-index': rivers[i].size});
+               $(item).append(curImg);
+            }
+        }
     });
 });
 

@@ -40,7 +40,14 @@ body {
     display: inline-block;
     width: 128px;
     height: 128px;
-    border: 0px solid black;
+    border: 0 solid black;
     margin: 0;
     padding: 0;
+    position: relative;
+}
+
+.chunk img {
+    position: absolute;
+    top: 0;
+    left: 0;
 }
