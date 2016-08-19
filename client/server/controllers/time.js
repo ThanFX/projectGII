@@ -1,10 +1,9 @@
-calendar = {};
-
-getCalendar = function(callback) {
-    pg.connect(CONN_STR, function(error, client) {
+/*
+getCalendar = function (callback) {
+    pg.connect(CONN_STR, function (error, client) {
         client.query("SELECT value->'periods' FROM config WHERE id = 'calendar';",
-            function(error, result) {
-                if(error) {
+            function (error, result) {
+                if (error) {
                     callback(error);
                 }
                 var periods = {};
@@ -21,8 +20,9 @@ getCalendar = function(callback) {
 };
 
 Meteor.methods({
-    'getWCTString': function(worldSeconds) {
+    'getWCTString': function (worldSeconds) {
         var worldTime = {};
+        //console.log(calendar);
         calendar.forEach((period) => {
             var t = Math.floor(worldSeconds / period.timeInSeconds) + period.minValue;
             if ((period.periodLabel == 'minute' || period.periodLabel == 'hour') && t < 10) {
@@ -36,3 +36,4 @@ Meteor.methods({
         return worldTime;
     }
 });
+*/

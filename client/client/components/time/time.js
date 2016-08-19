@@ -4,6 +4,23 @@
 
 var wct = {};
 
+function getWCTString(worldSeconds) {
+    var worldTime = {};
+    Calendar.sort((elem1, elem2) => {
+        return elem2.timeInSeconds - elem1.timeInSeconds;
+    });
+    Calendar.forEach((period) => {
+        var t = Math.floor(worldSeconds / period.timeInSeconds) + period.minValue;
+        if ((period.periodLabel == 'minute' || period.periodLabel == 'hour') && t < 10) {
+            worldTime[period.periodLabel] = '0' + t;
+        } else {
+            worldTime[period.periodLabel] = t;
+        }
+        worldSeconds -= ((t - period.minValue) * period.timeInSeconds);
+    });
+    return worldTime;
+}
+
 function getWorldTime(cTime) {
     cTime.reactive();
     cTime.depend();
@@ -16,17 +33,7 @@ function getWorldTime(cTime) {
 function getWorldCalendarTime(cTime) {
     var worldTime = getWorldTime(cTime);
     if (worldTime > 0) {
-        //console.log(Session.get("calendar"));
-        getData(Meteor.call, 'getWCTString', worldTime).then(
-            time => {
-                wct.calendar = time;
-                return new Promise((resolve) => resolve());
-            }
-        ).catch(
-            error => {
-                console.log(error);
-            }
-        );
+        wct.calendar = getWCTString(worldTime);
     }
     var s = "";
     if (wct.calendar && wct.calendar["year"] > 1) {

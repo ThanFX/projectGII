@@ -3,6 +3,8 @@
  */
 
 // Получаем календарь
+
+/*
 getData(getCalendar).then(
     periods => {
         calendar = periods;
@@ -16,4 +18,4 @@ getData(getCalendar).then(
     error => {
         console.log(error);
     }
-);
+);*/
