@@ -32,15 +32,15 @@ body {
 }
 
 .map-row {
-    display: inline-block;
-    margin: 0;
-    padding: 0;
+    font-size: 0;
 }
 
 .chunk {
+    font-size: 16px;
+    display: inline-block;
     width: 128px;
     height: 128px;
-    border: 1px solid black;
+    border: 0px solid black;
     margin: 0;
     padding: 0;
 }

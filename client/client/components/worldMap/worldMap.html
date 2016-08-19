@@ -1,43 +1,43 @@
 <template name="worldMap">
     <div class="map">
         <div class="map-row">
-            {{> chunk }}
-            {{> chunk }}
-            {{> chunk }}
-            {{> chunk }}
-            {{> chunk }}
+            {{> chunk row="0" col="0"}}
+            {{> chunk row="0" col="1"}}
+            {{> chunk row="0" col="2"}}
+            {{> chunk row="0" col="3"}}
+            {{> chunk row="0" col="4"}}
         </div>
         <div class="map-row">
-            {{> chunk }}
-            {{> chunk }}
-            {{> chunk }}
-            {{> chunk }}
-            {{> chunk }}
+            {{> chunk row="1" col="0"}}
+            {{> chunk row="1" col="1"}}
+            {{> chunk row="1" col="2"}}
+            {{> chunk row="1" col="3"}}
+            {{> chunk row="1" col="4"}}
         </div>
         <div class="map-row">
-            {{> chunk }}
-            {{> chunk }}
-            {{> chunk }}
-            {{> chunk }}
-            {{> chunk }}
+            {{> chunk row="2" col="0"}}
+            {{> chunk row="2" col="1"}}
+            {{> chunk row="2" col="2"}}
+            {{> chunk row="2" col="3"}}
+            {{> chunk row="2" col="4"}}
         </div>
         <div class="map-row">
-            {{> chunk }}
-            {{> chunk }}
-            {{> chunk }}
-            {{> chunk }}
-            {{> chunk }}
+            {{> chunk row="3" col="0"}}
+            {{> chunk row="3" col="1"}}
+            {{> chunk row="3" col="2"}}
+            {{> chunk row="3" col="3"}}
+            {{> chunk row="3" col="4"}}
         </div>
         <div class="map-row">
-            {{> chunk }}
-            {{> chunk }}
-            {{> chunk }}
-            {{> chunk }}
-            {{> chunk }}
+            {{> chunk row="4" col="0"}}
+            {{> chunk row="4" col="1"}}
+            {{> chunk row="4" col="2"}}
+            {{> chunk row="4" col="3"}}
+            {{> chunk row="4" col="4"}}
         </div>
     </div>
 </template>
 
 <template name="chunk">
-    <div class="chunk"></div>
+    <div class="chunk" data-row={{row}} data-col={{col}}>{{data}}</div>
 </template>
