@@ -6,9 +6,11 @@ server/pkg
 server/src/server/vendor/github.com
 server/src/server/vendor/gopkg.in
 server/src/github.com
+server/src/gopkg.in
 server/bin
 server/.cache
 *.bat
 server/src/server/server*
 server/restore*
 server/dump*
+server/pgAdmin4
