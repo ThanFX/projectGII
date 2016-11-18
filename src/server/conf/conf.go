@@ -7,6 +7,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
+const (
+	ADDR string = ":8080"
+)
+
 var (
 	Db        *sql.DB
 	Db_client *sql.DB

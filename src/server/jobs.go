@@ -89,6 +89,10 @@ func create_check(world_time_speed int) {
 }
 
 func state_job() {
+	if lib.GetNowWorldTime() == 0 {
+		return
+	}
+
 	cTime := lib.GetWorldCalendarTime(lib.GetNowWorldTime())
 	fmt.Println("Проверка состояний началась в ", lib.GetWCTString(cTime))
 
@@ -118,6 +122,10 @@ func state_job() {
 }
 
 func ed_job() {
+	if lib.GetNowWorldTime() == 0 {
+		return
+	}
+
 	cTime := lib.GetWorldCalendarTime(lib.GetNowWorldTime())
 	fmt.Println("Едим и пьём в ", lib.GetWCTString(cTime))
 
@@ -139,6 +147,10 @@ func ed_job() {
 }
 
 func hts_job() {
+	if lib.GetNowWorldTime() == 0 {
+		return
+	}
+
 	cTime := lib.GetWorldCalendarTime(lib.GetNowWorldTime())
 	fmt.Println("Проверка работы началась в ", lib.GetWCTString(cTime))
 
