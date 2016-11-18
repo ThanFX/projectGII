@@ -1,8 +1,11 @@
 package client
 
 import (
+	"fmt"
 	"log"
+	"server/lib"
 	"strconv"
+	"time"
 )
 
 func getTime() {
@@ -14,5 +17,7 @@ func getTime() {
 			log.Fatal("Ошибка запроса таймеров в БД", err)
 		}
 		world_time, err = strconv.ParseInt(world_time_str, 10, 64)
+		fmt.Println("Cчитанное из БД время: " + lib.GetWCTString(lib.GetWorldCalendarTime(world_time)))
+		time.Sleep(time.Second)
 	}
 }

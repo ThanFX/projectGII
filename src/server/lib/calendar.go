@@ -1,4 +1,4 @@
-package main
+package lib
 
 import (
 	"encoding/json"
@@ -23,10 +23,12 @@ type CalendarTime struct {
 }
 
 var (
+	db             = conf.Db
 	calendarConfig []CalendarPeriod
+	nowWorldTime   int64
 )
 
-func getWorldCalendarTime(worldTime int64) map[string]string {
+func GetWorldCalendarTime(worldTime int64) map[string]string {
 	cTime := make(map[string]string)
 	for key, _ := range calendarConfig {
 		t := int(worldTime/int64(calendarConfig[key].TimeInSeconds)) + calendarConfig[key].MinValue
@@ -40,13 +42,13 @@ func getWorldCalendarTime(worldTime int64) map[string]string {
 	return cTime
 }
 
-func getWCTString(cTime map[string]string) string {
+func GetWCTString(cTime map[string]string) string {
 	return cTime["year"] + " год, " + cTime["month"] + " месяц, " +
 		cTime["ten_day"] + " декада, " + cTime["day"] + " день, " +
 		cTime["hour"] + ":" + cTime["minute"]
 }
 
-func getCalendar() {
+func GetCalendar() {
 	var res string
 	err := db.QueryRow("SELECT value->'periods' FROM config WHERE id = 'calendar';").Scan(&res)
 	if err != nil {
@@ -58,4 +60,12 @@ func getCalendar() {
 		log.Fatal("Ошибка парсинга структуры календаря", err)
 	}
 	sortutil.DescByField(calendarConfig, "TimeInSeconds")
+}
+
+func GetNowWorldTime() int64 {
+	return nowWorldTime
+}
+
+func SetNowWorldTime(time int64) {
+	nowWorldTime = time
 }

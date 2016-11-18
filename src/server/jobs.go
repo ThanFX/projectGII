@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"server/lib"
 	"strconv"
 
 	"github.com/robfig/cron"
@@ -88,8 +89,8 @@ func create_check(world_time_speed int) {
 }
 
 func state_job() {
-	cTime := getWorldCalendarTime(nowWorldTime)
-	fmt.Println("Проверка состояний началась в ", getWCTString(cTime))
+	cTime := lib.GetWorldCalendarTime(lib.GetNowWorldTime())
+	fmt.Println("Проверка состояний началась в ", lib.GetWCTString(cTime))
 
 	cH, err := strconv.Atoi(cTime["hour"])
 	if err != nil {
@@ -117,8 +118,8 @@ func state_job() {
 }
 
 func ed_job() {
-	cTime := getWorldCalendarTime(nowWorldTime)
-	fmt.Println("Едим и пьём в ", getWCTString(cTime))
+	cTime := lib.GetWorldCalendarTime(lib.GetNowWorldTime())
+	fmt.Println("Едим и пьём в ", lib.GetWCTString(cTime))
 
 	_, err := db.Exec(`
 		UPDATE person_health_characteristic SET thirst = $1 WHERE
@@ -138,8 +139,8 @@ func ed_job() {
 }
 
 func hts_job() {
-	cTime := getWorldCalendarTime(nowWorldTime)
-	fmt.Println("Проверка работы началась в ", getWCTString(cTime))
+	cTime := lib.GetWorldCalendarTime(lib.GetNowWorldTime())
+	fmt.Println("Проверка работы началась в ", lib.GetWCTString(cTime))
 
 	_, err := db.Exec(`
 		UPDATE person_health_characteristic SET
@@ -154,7 +155,7 @@ func hts_job() {
 		stateSpeeds.Get("sleep.thirst").Float64(),
 		stateSpeeds.Get("sleep.fatigue").Float64(),
 		stateSpeeds.Get("sleep.somnolency").Float64(),
-		nowWorldTime)
+		lib.GetNowWorldTime())
 	if err != nil {
 		log.Fatal("Ошибка обновления характерстик спящих персонажей: ", err)
 	}
@@ -171,7 +172,7 @@ func hts_job() {
 		stateSpeeds.Get("chores.thirst").Float64(),
 		stateSpeeds.Get("chores.fatigue").Float64(),
 		stateSpeeds.Get("chores.somnolency").Float64(),
-		nowWorldTime)
+		lib.GetNowWorldTime())
 	if err != nil {
 		log.Fatal("Ошибка обновления характерстик бодрствующих персонажей: ", err)
 	}

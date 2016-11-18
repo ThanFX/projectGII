@@ -1,12 +1,18 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"server/client"
+	"server/conf"
+	"server/lib"
 	"strconv"
 	"time"
 
 	_ "github.com/lib/pq"
+)
+
+var (
+	db = conf.Db
 )
 
 /*
@@ -37,17 +43,15 @@ func setWorldTime() {
 		if err != nil {
 			log.Fatal("Ошибка записи таймеров в БД")
 		}
-		nowWorldTime = world_time
+		lib.SetNowWorldTime(world_time)
 		first_delta = 0
-		//fmt.Println(real_time, world_time, time_speed)
-		fmt.Println(getWCTString(getWorldCalendarTime(world_time)))
 		time.Sleep(time.Second)
 	}
 }
 
 func main() {
 	defer db.Close()
-	getCalendar()
+	lib.GetCalendar()
+	client.ClientStart()
 	setWorldTime()
-	clientStart()
 }

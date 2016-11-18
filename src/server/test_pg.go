@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"server/lib"
 	"time"
 )
 
@@ -34,7 +35,7 @@ func test_insert() {
 	per := 0
 	t1 := time.Now()
 	for i := 0; i < MAX_COUNT; i++ {
-		_, err = insert_query.Exec(nowWorldTime)
+		_, err = insert_query.Exec(lib.GetNowWorldTime())
 		if err != nil {
 			log.Fatal("Query execution error -->%v\n", err)
 		}

@@ -1,5 +1,13 @@
 package client
 
-func clientStart() {
+import (
+	"server/conf"
+)
+
+var (
+	db = conf.Db_client
+)
+
+func ClientStart() {
 	go getTime()
 }

@@ -3,22 +3,23 @@ package conf
 import (
 	"database/sql"
 	"log"
+
+	_ "github.com/lib/pq"
 )
 
 var (
-	db           *sql.DB
-	db_client    *sql.DB
-	err          error
-	nowWorldTime int64
+	Db        *sql.DB
+	Db_client *sql.DB
+	err       error
 )
 
 func init() {
 	db_url := "user=postgres password=postgres dbname=postgres sslmode=disable"
-	db, err = sql.Open("postgres", db_url)
+	Db, err = sql.Open("postgres", db_url)
 	if err != nil {
 		log.Fatal("Ошибка соединения сервера с БД")
 	}
-	db_client, err = sql.Open("postgres", db_url)
+	Db_client, err = sql.Open("postgres", db_url)
 	if err != nil {
 		log.Fatal("Ошибка соединения клиента с БД")
 	}
