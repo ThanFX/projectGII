@@ -51,7 +51,7 @@ func setWorldTime() {
 
 func main() {
 	defer db.Close()
-	lib.GetCalendar()
-	go client.ClientStart()
-	setWorldTime()
+	//lib.GetCalendar()
+	client.ClientStart()
+	//setWorldTime()
 }

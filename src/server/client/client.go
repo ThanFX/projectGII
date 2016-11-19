@@ -2,18 +2,16 @@ package client
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"server/conf"
-	"text/template"
 
-	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
 
 var (
-	db           = conf.Db_client
-	homeTemplate = template.Must(template.ParseFiles("client/public/index.html"))
+	db = conf.Db_client
 )
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -22,16 +20,28 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not found", 404)
 		return
 	}
+
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	err := homeTemplate.Execute(w, r.Host)
+
+	homeTemplate, err := template.ParseFiles("client/static/templates/index.html")
+
 	if err != nil {
-		log.Fatal(w, "Template error: ", err)
+		log.Fatal("Ошибка парсинга шаблона index.html: ", err)
 		return
 	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	homeTemplate.ExecuteTemplate(w, "index", nil)
+	/*
+		if err != nil {
+			log.Fatal(w, "Template error: ", err)
+			return
+		}
+	*/
 }
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
@@ -46,12 +56,11 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ClientStart() {
-	go getTime()
+	//go getTime()
 
-	r := mux.NewRouter()
+	http.Handle("/client/static/", http.StripPrefix("/client/static/", http.FileServer(http.Dir("./client/static/"))))
 	http.HandleFunc("/", homeHandler)
-	r.HandleFunc("/ws", wsHandler)
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.HandleFunc("/ws", wsHandler)
 
 	err := http.ListenAndServe(conf.ADDR, nil)
 	if err != nil {
