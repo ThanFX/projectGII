@@ -18,16 +18,18 @@ type Player struct {
 	ws *websocket.Conn
 
 	// Buffered channel of outbound messages.
-	//send chan []byte
+	send chan string
 }
 
 var (
-	db = conf.Db_client
+	db       = conf.Db_client
+	sendTime chan string
 )
 
 func (p *Player) sendTime() {
 	for {
-		p.ws.WriteMessage(websocket.TextMessage, []byte("Test!"))
+
+		p.ws.WriteMessage(websocket.TextMessage, []byte(<-sendTime))
 		fmt.Println("Test!")
 		time.Sleep(time.Second)
 	}
@@ -72,12 +74,13 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Println("Соединение установлено!")
-	player := &Player{ws: ws}
+	player := &Player{ws: ws, send: sendTime}
+
 	go player.sendTime()
 }
 
 func ClientStart() {
-	//go getTime()
+	go getTime(sendTime)
 
 	http.Handle("/client/static/", http.StripPrefix("/client/static/", http.FileServer(http.Dir("./client/static/"))))
 	http.HandleFunc("/", homeHandler)
