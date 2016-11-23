@@ -48,6 +48,12 @@ func GetWCTString(cTime map[string]string) string {
 		cTime["hour"] + ":" + cTime["minute"]
 }
 
+func GetWCTJSON(cTime map[string]string) string {
+	return "{\"year\":\"" + cTime["year"] + "\",\"month\":\"" + cTime["month"] + "\",\"ten_day\":\"" +
+		cTime["ten_day"] + "\",\"day\":\"" + cTime["day"] + "\",\"hour\":\"" +
+		cTime["hour"] + "\",\"minute\":\"" + cTime["minute"] + "\"}"
+}
+
 func GetCalendar() {
 	var res string
 	err := db.QueryRow("SELECT value->'periods' FROM config WHERE id = 'calendar';").Scan(&res)

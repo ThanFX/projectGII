@@ -1,3 +1,10 @@
+var setDisplayTime = function(value){
+    if(+value < 10){
+        value = '0' + value;
+    }
+    return value;
+};
+
 window.onload = function () {
     var wd = document.querySelector('.worldDate');
 	if (window["WebSocket"]) {
@@ -7,7 +14,19 @@ window.onload = function () {
             item.innerHTML = "<b>Connection closed.</b>";
         };
         conn.onmessage = function (evt) {
-			wd.innerText = evt.data;
+			console.log(evt.data);
+			message = JSON.parse(evt.data);
+			console.log(message);
+
+			switch (message.key) {
+				case "time":
+					wd.innerText = 'Сейчас '+ message.value.day + ' день ' + message.value.ten_day +
+        ' декады ' + message.value.month + ' месяца ' + message.value.year +
+        ' года, ' + setDisplayTime(+message.value.hour) + ':' +
+        setDisplayTime(+message.value.minute);
+					break;
+			}
+
 			//console.log(evt.data)
 			/*
 			var messages = evt.data.split('\n');

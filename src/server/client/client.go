@@ -97,6 +97,7 @@ func (u *User) writePump() {
 					w.Write(<-u.send)
 				}
 			*/
+
 			if err := w.Close(); err != nil {
 				return
 			}
