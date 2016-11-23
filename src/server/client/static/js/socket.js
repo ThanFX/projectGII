@@ -14,9 +14,9 @@ window.onload = function () {
             item.innerHTML = "<b>Connection closed.</b>";
         };
         conn.onmessage = function (evt) {
-			console.log(evt.data);
+			//console.log(evt.data);
 			message = JSON.parse(evt.data);
-			console.log(message);
+			//console.log(message);
 
 			switch (message.key) {
 				case "time":
