@@ -11,27 +11,101 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type Player struct {
-	//hub *Hub
+const (
+	// Time allowed to write a message to the peer.
+	writeWait = 10 * time.Second
+
+	// Time allowed to read the next pong message from the peer.
+	pongWait = 60 * time.Second
+
+	// Send pings to peer with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
+
+	// Maximum message size allowed from peer.
+	maxMessageSize = 512
+)
+
+type User struct {
+	hub *Hub
 
 	// The websocket connection.
 	ws *websocket.Conn
 
 	// Buffered channel of outbound messages.
-	send chan string
+	send chan []byte
 }
 
 var (
-	db       = conf.Db_client
-	sendTime chan string
+	db      = conf.Db_client
+	hub     = newHub()
+	newline = []byte{'\n'}
+	space   = []byte{' '}
 )
 
-func (p *Player) sendTime() {
+func (u *User) readPump() {
+	defer func() {
+		u.hub.unregister <- u
+		u.ws.Close()
+	}()
+	u.ws.SetReadLimit(maxMessageSize)
+	u.ws.SetReadDeadline(time.Now().Add(pongWait))
+	u.ws.SetPongHandler(func(string) error {
+		u.ws.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
 	for {
+		_, message, err := u.ws.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
+				log.Fatal("error: %v", err)
+			}
+			break
+		}
+		fmt.Print(message)
+		//message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
+		//u.hub.broadcast <- message
+	}
+}
 
-		p.ws.WriteMessage(websocket.TextMessage, []byte(<-sendTime))
-		fmt.Println("Test!")
-		time.Sleep(time.Second)
+func (u *User) writePump() {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		u.ws.Close()
+	}()
+	for {
+		select {
+		case message, ok := <-u.send:
+			u.ws.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				// The hub closed the channel.
+				u.ws.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			w, err := u.ws.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return
+			}
+			w.Write(message)
+
+			// Add queued chat messages to the current websocket message.
+			/*
+				n := len(u.send)
+				for i := 0; i < n; i++ {
+					w.Write(newline)
+					w.Write(<-u.send)
+				}
+			*/
+			if err := w.Close(); err != nil {
+				return
+			}
+		case <-ticker.C:
+			u.ws.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := u.ws.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
+				return
+			}
+		}
 	}
 }
 
@@ -41,21 +115,16 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not found", 404)
 		return
 	}
-
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
-
 	homeTemplate, err := template.ParseFiles("client/static/templates/index.html")
-
 	if err != nil {
 		log.Fatal("Ошибка парсинга шаблона index.html: ", err)
 		return
 	}
-
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
 	homeTemplate.ExecuteTemplate(w, "index", nil)
 	/*
 		if err != nil {
@@ -74,13 +143,15 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Println("Соединение установлено!")
-	player := &Player{ws: ws, send: sendTime}
-
-	go player.sendTime()
+	user := &User{hub: hub, ws: ws, send: make(chan []byte)}
+	user.hub.register <- user
+	go user.writePump()
+	user.readPump()
 }
 
 func ClientStart() {
-	go getTime(sendTime)
+	go hub.run()
+	go getTime(hub.broadcast)
 
 	http.Handle("/client/static/", http.StripPrefix("/client/static/", http.FileServer(http.Dir("./client/static/"))))
 	http.HandleFunc("/", homeHandler)

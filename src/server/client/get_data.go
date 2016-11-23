@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func getTime(sendTime chan string) {
+func getTime(sendTime chan []byte) {
 	var world_time_str string
 	var world_time int64
 	for {
@@ -17,7 +17,7 @@ func getTime(sendTime chan string) {
 		}
 		world_time, err = strconv.ParseInt(world_time_str, 10, 64)
 		//fmt.Println("Cчитанное из БД время: " + lib.GetWCTString(lib.GetWorldCalendarTime(world_time)))
-		sendTime <- lib.GetWCTString(lib.GetWorldCalendarTime(world_time))
+		sendTime <- []byte(lib.GetWCTString(lib.GetWorldCalendarTime(world_time)))
 		time.Sleep(time.Second)
 	}
 }
