@@ -25,6 +25,9 @@ window.onload = function () {
         ' года, ' + setDisplayTime(+message.value.hour) + ':' +
         setDisplayTime(+message.value.minute);
 					break;
+				case "worldMap":
+					console.log(message.value);
+					break;
 			}
 
 			//console.log(evt.data)

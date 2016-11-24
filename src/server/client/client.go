@@ -147,13 +147,19 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	user := &User{hub: hub, ws: ws, send: make(chan []byte)}
 	user.hub.register <- user
 	go user.writePump()
+	getInit(user.send)
 	user.readPump()
+}
+
+func faviconHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "client/static/favicon.ico")
 }
 
 func ClientStart() {
 	go hub.run()
 	go getTime(hub.broadcast)
 
+	http.HandleFunc("/favicon.ico", faviconHandler)
 	http.Handle("/client/static/", http.StripPrefix("/client/static/", http.FileServer(http.Dir("./client/static/"))))
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/ws", wsHandler)
