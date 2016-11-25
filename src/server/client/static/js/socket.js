@@ -28,6 +28,12 @@ window.onload = function () {
 				case "worldMap":
 					console.log(message.value);
 					break;
+				case "persons":
+					console.log(message.value);
+					break;
+				case "states":
+					console.log(message.value);
+					break;
 			}
 
 			//console.log(evt.data)

@@ -1,7 +1,9 @@
 package client
 
 import (
+	"encoding/json"
 	"log"
+	"server/conf"
 	"server/lib"
 	"strconv"
 	"strings"
@@ -40,6 +42,7 @@ func getTime(sendTime chan []byte) {
 
 func getInit(send chan []byte) {
 	getMap(startMapX, startMapY, send)
+	getConfig(send)
 }
 
 func getMap(startX, startY int, send chan []byte) {
@@ -63,4 +66,44 @@ func getMap(startX, startY int, send chan []byte) {
 	out = strings.TrimRight(out, ",")
 	out += "]}"
 	send <- []byte("{\"key\":\"worldMap\",\"value\":" + out)
+}
+
+func getPerson(send chan []byte) {
+	var person conf.Person
+	var out string
+	for {
+		persons, err := db.Query("SELECT p.id, p.name, p.job_id, chr.state, chr.health, chr.hunger, chr.thirst, chr.fatigue, chr.somnolency FROM persons p JOIN person_health_characteristic chr ON chr.person_id = p.id;")
+		if err != nil {
+			log.Fatal("Ошибка запроса пользователей в БД: ", err)
+		}
+		defer persons.Close()
+		out = "["
+		for persons.Next() {
+			err = persons.Scan(&person.PersonId, &person.Name, &person.Job,
+				&person.PersonChr.State, &person.PersonChr.Health, &person.PersonChr.Hunger,
+				&person.PersonChr.Thirst, &person.PersonChr.Fatigue,
+				&person.PersonChr.Somnolency)
+			if err != nil {
+				log.Fatal("Ошибка парсинга списка персонажей: ", err)
+			}
+			personString, err := json.Marshal(person)
+			if err != nil {
+				log.Fatal("Ошибка преобразование персонажа в JSON: ", err)
+			}
+			out += (string(personString) + ",")
+		}
+		out = strings.TrimRight(out, ",")
+		out += "]}"
+		send <- []byte("{\"key\":\"persons\",\"value\":" + out)
+		time.Sleep(time.Second * 5)
+	}
+}
+
+func getConfig(send chan []byte) {
+	var states string
+	err := db.QueryRow("SELECT value FROM config WHERE id = 'states';").Scan(&states)
+	if err != nil {
+		log.Fatal("Ошибка запроса конфига состояний персонажей в БД: ", err)
+	}
+	send <- []byte("{\"key\":\"states\",\"value\":" + states + "}")
 }

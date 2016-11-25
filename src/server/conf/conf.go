@@ -11,6 +11,22 @@ const (
 	ADDR string = ":8080"
 )
 
+type Characteristics struct {
+	State      int     `json: "state"`
+	Health     float32 `json: "health"`
+	Fatigue    float32 `json: "fatigue"`
+	Hunger     float32 `json: "hunger"`
+	Thirst     float32 `json: "thirst"`
+	Somnolency float32 `json: "somnolency"`
+}
+
+type Person struct {
+	PersonId  int             `json: "personId"`
+	Name      string          `json: "name"`
+	Job       int             `json: "job"`
+	PersonChr Characteristics `json: "characteristics"`
+}
+
 var (
 	Db        *sql.DB
 	Db_client *sql.DB

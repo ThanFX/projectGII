@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"server/conf"
 	"server/lib"
 	"strconv"
 
@@ -12,21 +13,8 @@ import (
 )
 
 type StateSpeed struct {
-	State string          `json: "state"`
-	Speed Characteristics `json: "speed"`
-}
-
-type Characteristics struct {
-	Fatigue    float32
-	Hunger     float32
-	Thirst     float32
-	Somnolency float32
-}
-
-type Person struct {
-	person_id int
-	name      string
-	chr       Characteristics
+	State string               `json: "state"`
+	Speed conf.Characteristics `json: "speed"`
 }
 
 type CheckPeriods struct {
