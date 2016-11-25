@@ -1,0 +1,69 @@
+.container {
+	max-width: 1200px;
+	position: relative;
+}
+
+.worldDate {
+	padding: 5px;
+}
+
+.main {
+	height: 80%;
+}
+
+.main:after,
+.mainArea:after{
+	width: 100%;
+	clear: both;
+	content: "";
+	display: table;
+}
+
+.mainArea {
+	width: 500px;
+	float: left;
+}
+
+.persons {
+	float: right;
+	min-width: 300px;
+	max-width: 300px;
+	overflow-x: hidden;
+	overflow-y: scroll;
+}
+
+.map{
+	float: left;
+	width: 100px;
+	height: 100px;
+}
+
+.map-info{
+	float: right;
+	width: 100px;
+	height: 100px;
+}
+
+
+.log {
+	min-height: 300px;
+	max-height: 20%;
+	overflow-y: auto;
+}
+
+.person {
+    display: block;
+    padding: 10px;
+    border: 1px solid dimgray;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+.person .name {
+	font-weight: bold;
+}
+
+.person-charasteristics {
+    display: none;
+}

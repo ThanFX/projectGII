@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"server/conf"
 	"server/lib"
@@ -35,7 +36,8 @@ func getTime(sendTime chan []byte) {
 		}
 		world_time, err = strconv.ParseInt(world_time_str, 10, 64)
 		//fmt.Println("Cчитанное из БД время: " + lib.GetWCTString(lib.GetWorldCalendarTime(world_time)))
-		sendTime <- []byte("{\"key\":\"time\",\"value\":" + (lib.GetWCTJSON(lib.GetWorldCalendarTime(world_time))) + "}")
+		//sendTime <- []byte("{\"key\":\"time\",\"value\":" + (lib.GetWCTJSON(lib.GetWorldCalendarTime(world_time))) + "}")
+		fmt.Println(lib.GetWCTJSON(lib.GetWorldCalendarTime(world_time)))
 		time.Sleep(time.Second)
 	}
 }
@@ -65,7 +67,8 @@ func getMap(startX, startY int, send chan []byte) {
 	}
 	out = strings.TrimRight(out, ",")
 	out += "]}"
-	send <- []byte("{\"key\":\"worldMap\",\"value\":" + out)
+	fmt.Println(out)
+	//send <- []byte("{\"key\":\"worldMap\",\"value\":" + out)
 }
 
 func getPerson(send chan []byte) {
@@ -94,7 +97,8 @@ func getPerson(send chan []byte) {
 		}
 		out = strings.TrimRight(out, ",")
 		out += "]}"
-		send <- []byte("{\"key\":\"persons\",\"value\":" + out)
+		//send <- []byte("{\"key\":\"persons\",\"value\":" + out)
+		fmt.Println(out)
 		time.Sleep(time.Second * 5)
 	}
 }
@@ -105,5 +109,6 @@ func getConfig(send chan []byte) {
 	if err != nil {
 		log.Fatal("Ошибка запроса конфига состояний персонажей в БД: ", err)
 	}
+	fmt.Println(states)
 	send <- []byte("{\"key\":\"states\",\"value\":" + states + "}")
 }
