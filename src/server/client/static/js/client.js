@@ -92,4 +92,15 @@ function updatePersonChr(persons) {
 	})
 }
 
+function sortMap() {
+	var mapArray = new Array[mapInfo.mapWidth][mapInfo.mapHeight];
+	worldMap.forEach((chunk, i)=>{
+		mapArray[chunk.x - startMapX][]
+	})
+}
+
+function createMap() {
+	var chunk = $()
+}
+
 drawPersons(persons);
