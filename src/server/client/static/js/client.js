@@ -92,15 +92,119 @@ function updatePersonChr(persons) {
 	})
 }
 
-function sortMap() {
-	var mapArray = new Array[mapInfo.mapWidth][mapInfo.mapHeight];
-	worldMap.forEach((chunk, i)=>{
-		mapArray[chunk.x - startMapX][]
-	})
+function matrixArray(rows, columns) {
+  	var arr = new Array();
+  	for(var i = 0; i < columns; i++){
+    	arr[i] = new Array();
+    	for(var j = 0; j < rows; j++){
+      		arr[i][j] = null;
+    	}
+  	}
+  	return arr;
 }
 
-function createMap() {
-	var chunk = $()
+function createMapArray() {
+	var mapArray = matrixArray(mapInfo.mapWidth, mapInfo.mapHeight);
+	worldMap.forEach((chunk, i)=>{
+		mapArray[mapInfo.startMapY - chunk.y][chunk.x - mapInfo.startMapX] = {
+			"x": chunk.x,
+			"y": chunk.y,
+			"isExplored": chunk.isExplored,
+			"terrains": chunk.terrains
+		};
+	})
+	return mapArray;
+}
+
+function createHTMLMap() {
+	var mapArray = createMapArray();
+	for(i = 0; i < mapInfo.mapWidth; i++) {
+		var mapRow = $('<div>', {class: "map-row"});
+		for(j = 0; j < mapInfo.mapHeight; j++) { 
+			mapRow.append($('<div>', {
+				class: "chunk",
+				attr: {
+					"data-row": i,
+					"data-col": j
+				}
+			}));
+		}
+		$('.map').append(mapRow);
+	}
+	return mapArray;
+}
+
+function getMainTerrain(chunk) {
+    var majorTerrains = '';
+    var m = 0;
+    for(let key in chunk.terrains){
+        if (!chunk.terrains.hasOwnProperty(key)) continue;
+        if(key != 'urban' && key != 'roads' && key != 'rivers'){
+            if (m < +chunk.terrains[key].percentArea) {
+                m = +chunk.terrains[key].percentArea;
+                majorTerrains = key;
+            }
+        }
+    }
+    return majorTerrains;
+}
+
+function getMainTerrain(chunk) {
+    var majorTerrains = '';
+    var m = 0;
+    for(let key in chunk.terrains){
+        if (!chunk.terrains.hasOwnProperty(key)) continue;
+        if(key != 'urban' && key != 'roads' && key != 'rivers'){
+            if (m < +chunk.terrains[key].percentArea) {
+                m = +chunk.terrains[key].percentArea;
+                majorTerrains = key;
+            }
+        }
+    }
+    return majorTerrains;
+}
+
+function getChunkRivers(chunk) {
+    let isRiver = !!('rivers' in chunk.terrains);
+    if(!isRiver) {
+        return false;
+    }
+    let rivers = [];
+
+    for(let i = 0; i < chunk.terrains.rivers.length; i++){
+        let river = {};
+        river.size = chunk.terrains.rivers[i].size;
+        river.direction = chunk.terrains.rivers[i].direction;
+        river.bridge = chunk.terrains.rivers[i].bridge;
+        rivers.push(river);
+    }
+    return rivers;
+}
+
+function drawMap() {
+	var mapArray = createHTMLMap();
+	var path = '../img/resources/';
+	$('.chunk').each((i, item) => {
+        let curChunk = mapArray[+$(item).attr("data-row")][+$(item).attr("data-col")];
+        let mainTerrain = getMainTerrain(curChunk);
+        let mainTerrainFile = 'url(' + path + mainTerrain + '.png)';
+        $(item).css({
+            'backgroundImage': mainTerrainFile
+        });
+
+        var rivers = getChunkRivers(curChunk);
+        if(rivers) {
+           for(i = 0; i < rivers.length; i++) {
+               let riverFileName = path + 'river_' + rivers[i].size +
+                       '_' + rivers[i].direction + '.png';
+               let curImg = $("<img>");
+               curImg.prop("src", riverFileName);
+               curImg.css({'z-index': rivers[i].size});
+               $(item).append(curImg);
+            }
+        }
+    });
 }
 
 drawPersons(persons);
+drawMap();
