@@ -181,25 +181,63 @@ function getChunkRivers(chunk) {
     return rivers;
 }
 
+function getChunkRoads(chunk) {
+    let isRoad = !!('roads' in chunk.terrains);
+    if(!isRoad) {
+        return false;
+    }
+    let roads = [];
+
+    for(let i = 0; i < chunk.terrains.roads.length; i++){
+        let road = {};
+        road.size = chunk.terrains.roads[i].size;
+        road.direction = chunk.terrains.roads[i].direction;
+        roads.push(road);
+    }
+    return roads;
+}
+
 function drawMap() {
 	var mapArray = createHTMLMap();
-	var path = '../img/resources/';
 	$('.chunk').each((i, item) => {
         let curChunk = mapArray[+$(item).attr("data-row")][+$(item).attr("data-col")];
         let mainTerrain = getMainTerrain(curChunk);
-        let mainTerrainFile = 'url(' + path + mainTerrain + '.png)';
+        let mainTerrainFile = 'url(' + PATH + mainTerrain + '.png)';
         $(item).css({
             'backgroundImage': mainTerrainFile
         });
 
         var rivers = getChunkRivers(curChunk);
+        var roads = getChunkRoads(curChunk);
+        if(roads) {
+           for(i = 0; i < roads.length; i++) {
+                let roadFileName = PATH + 'road_' + roads[i].size +
+                       '_' + roads[i].direction + '.png';
+                let curImg = $("<img>");
+                curImg.prop("src", roadFileName);
+                curImg.css({'z-index': ROAD_Z_INDEX + roads[i].size});
+				
+				/* Грязный хак только под текущую захардкоженную карту
+				Потом нужно будет переделывать под нормальное определение
+				местоположения относительно рек */
+				if(roads[i].direction == 'S-N') {
+                	curImg.css({'left': "60px"});
+                }
+				if(roads[i].direction == 'W-E' || roads[i].direction == 'W-C') {
+                	curImg.css({'top': "90px"});
+                }
+
+                $(item).append(curImg);
+            }
+        }
+
         if(rivers) {
            for(i = 0; i < rivers.length; i++) {
-               let riverFileName = path + 'river_' + rivers[i].size +
+               let riverFileName = PATH + 'river_' + rivers[i].size +
                        '_' + rivers[i].direction + '.png';
                let curImg = $("<img>");
                curImg.prop("src", riverFileName);
-               curImg.css({'z-index': rivers[i].size});
+               curImg.css({'z-index': RIVER_Z_INDEX + rivers[i].size});
                $(item).append(curImg);
             }
         }

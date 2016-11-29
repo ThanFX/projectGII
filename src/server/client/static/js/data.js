@@ -1,3 +1,7 @@
+const PATH = '../img/resources/';
+const ROAD_Z_INDEX = 10;
+const RIVER_Z_INDEX = 20;
+
 var time = {
 	"year":"15",
 	"month":"3",
