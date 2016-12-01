@@ -116,6 +116,18 @@ function createMapArray() {
 	return mapArray;
 }
 
+function chunkHover() {
+	$(this).css({'border': "2px solid red"});
+}
+
+function chunkUnhover() {
+	$(this).css({'border': "none"});
+}
+
+function chunkClick(event) {
+
+}
+
 function createHTMLMap() {
 	var mapArray = createMapArray();
 	for(i = 0; i < mapInfo.mapWidth; i++) {
@@ -126,6 +138,11 @@ function createHTMLMap() {
 				attr: {
 					"data-row": i,
 					"data-col": j
+				},
+				on: {
+					mouseover: chunkHover,
+					mouseleave: chunkUnhover,
+					click: chunkClick
 				}
 			}));
 		}
