@@ -2,12 +2,11 @@ body {
     font-family: 'Source Sans Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-size: 16px;
     font-weight: normal;
-    margin: 3em 0;
     padding: 0;
 }
 
 .container {
-	max-width: 1200px;
+	max-width: 1300px;
 	position: relative;
 }
 
@@ -41,12 +40,14 @@ body {
 
 .map{
 	float: left;
+	border: 5px solid gray;
 }
 
 .map-info{
+	margin-left: 20px;
 	float: right;
-	min-width: 100px;
 	min-height: 100px;
+	width: 250px;
 }
 
 
@@ -73,11 +74,6 @@ body {
     display: none;
 }
 
-.map {
-    margin: 3em auto;
-    text-align: center;
-}
-
 .map-row {
     font-size: 0;
 }
@@ -98,4 +94,51 @@ body {
     position: absolute;
     top: 0;
     left: 0;
+}
+
+.person-icon {
+	position: absolute;
+	width: 8px;
+	height: 8px;
+	z-index: 1000;
+	background-image: url('../img/resources/person-icon.png');
+}
+
+.person-icon:hover {
+	position: absolute;
+	width: 8px;
+	height: 8px;
+	z-index: 1000;
+	background-image: url('../img/resources/person-icon-hover.png');
+}
+
+.person-job-icon {
+	position: absolute;
+	width: 8px;
+	height: 8px;
+	z-index: 1000;
+	background-image: url('../img/resources/person-job-icon.png');
+}
+
+.person-job-icon:hover {
+	position: absolute;
+	width: 8px;
+	height: 8px;
+	z-index: 1000;
+	background-image: url('../img/resources/person-job-icon-hover.png');
+}
+
+.person-icon:hover::after {
+    content: attr(data-title);
+    position: absolute;
+    left: 20px;
+    top: 10px;
+    z-index: 2000;
+    background: rgba(255,255,230,0.9);
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    padding: 5px 5px;
+    border: 1px solid #333;
+    border-radius: 3px;
+    width: 200px;
 }

@@ -5,6 +5,10 @@ var setDisplayTime = function(value){
     return value;
 };
 
+var rand = function (min, max) {
+    return Math.floor(min + Math.random()*(max +1 - min));
+};
+
 var textTime = 'Сейчас '+ time.day + ' день ' + time.ten_day +
         ' декады ' + time.month + ' месяца ' + time.year +
         ' года, ' + setDisplayTime(+time.hour) + ':' +
@@ -51,6 +55,10 @@ function createPerson(person) {
 			text: person.Name
 		})
 		.add($('<div>', {
+			class: "person-chunk",
+			text: "x: " + person.Chunk.X + ", y: " + person.Chunk.Y
+		}))
+		.add($('<div>', {
 			class: "person-charasteristics",
 			append: $('<div>', {
 				class: "state",
@@ -76,20 +84,49 @@ function createPerson(person) {
 	});
 }
 
+function drawPersonOnMap(person) {
+	var personChunk = $('[data-row=' + (mapInfo.startMapY - person.Chunk.Y) + 
+	'][data-col=' + (person.Chunk.X - mapInfo.startMapX) + ']');
+	personChunk.append($('<div>', {
+		class: "person-icon",
+		id: person.PersonId,
+		css: {
+			"top": rand(8, 120) + 'px',
+			"left": rand(8, 120) + 'px',
+		},
+		attr: {
+			"data-title": person.Name + ', id: ' + person.PersonId
+		}
+	}));
+}
+
 function drawPersons(persons) {
 	persons.forEach(function(person, i){
+		drawPersonOnMap(person);
 		$('.persons').append(createPerson(person));
-	})
+	});
 }
 
 function updatePersonChr(persons) {
 	persons.forEach(function(person, i){
-		$('div[data-person-id='+person.PersonId+']').find('.state').text("Состояние: " + getPersonState(person.PersonChr.State));
-		$('div[data-person-id='+person.PersonId+']').find('.hunger').text("Голод: " + person.PersonChr.Hunger);
-		$('div[data-person-id='+person.PersonId+']').find('.thirst').text("Жажда: " + person.PersonChr.Thirst);
-		$('div[data-person-id='+person.PersonId+']').find('.fatigue').text("Усталость: " + person.PersonChr.Fatigue);
-		$('div[data-person-id='+person.PersonId+']').find('.somnolency').text("Сонливость: " + person.PersonChr.Somnolency);
-	})
+		$('div[data-person-id='+person.PersonId+']').find('.state')
+		.text("Состояние: " + getPersonState(person.PersonChr.State));
+		$('div[data-person-id='+person.PersonId+']').find('.hunger')
+		.text("Голод: " + person.PersonChr.Hunger);
+		$('div[data-person-id='+person.PersonId+']').find('.thirst')
+		.text("Жажда: " + person.PersonChr.Thirst);
+		$('div[data-person-id='+person.PersonId+']').find('.fatigue')
+		.text("Усталость: " + person.PersonChr.Fatigue);
+		$('div[data-person-id='+person.PersonId+']').find('.somnolency')
+		.text("Сонливость: " + person.PersonChr.Somnolency);
+	});
+}
+
+function updatePersonChunk(persons) {
+	persons.forEach(function(person, i) {
+		$('div[data-person-id='+person.PersonId+']').find('.person-chunk')
+		.text("x: " + person.Chunk.X + ", y: " + person.Chunk.Y);
+	});
 }
 
 function matrixArray(rows, columns) {
@@ -103,7 +140,7 @@ function matrixArray(rows, columns) {
   	return arr;
 }
 
-function createMapArray() {
+function createMapArray(worldMap) {
 	var mapArray = matrixArray(mapInfo.mapWidth, mapInfo.mapHeight);
 	worldMap.forEach((chunk, i)=>{
 		mapArray[mapInfo.startMapY - chunk.y][chunk.x - mapInfo.startMapX] = {
@@ -112,12 +149,12 @@ function createMapArray() {
 			"isExplored": chunk.isExplored,
 			"terrains": chunk.terrains
 		};
-	})
+	});
 	return mapArray;
 }
 
 function chunkHover() {
-	$(this).css({'border': "2px solid red"});
+	$(this).css({'border': "2px solid #770000"});
 }
 
 function chunkUnhover() {
@@ -125,11 +162,14 @@ function chunkUnhover() {
 }
 
 function chunkClick(event) {
-
+	$('.chunk').css({'border': "none"});
+	$(this).css({'border': "2px solid red"});
+	var chunk = mapArray[$(this).attr("data-row")][$(this).attr("data-col")];
+	$('.map-info').html(createFormattedChunkInfo(chunk));	
 }
 
-function createHTMLMap() {
-	var mapArray = createMapArray();
+function createHTMLMap(worldMap) {
+	var mapArray = createMapArray(worldMap);
 	for(i = 0; i < mapInfo.mapWidth; i++) {
 		var mapRow = $('<div>', {class: "map-row"});
 		for(j = 0; j < mapInfo.mapHeight; j++) { 
@@ -140,8 +180,10 @@ function createHTMLMap() {
 					"data-col": j
 				},
 				on: {
+					/*
 					mouseover: chunkHover,
 					mouseleave: chunkUnhover,
+					*/
 					click: chunkClick
 				}
 			}));
@@ -214,8 +256,47 @@ function getChunkRoads(chunk) {
     return roads;
 }
 
+function createFormattedChunkInfo(chunk){
+    var info = 'Координаты чанка<br>x: ' + chunk.x + ', y: ' + chunk.y + '<hr>';
+    var towns = '';
+    var rivers = '';
+    var roads = '';
+    var others = '';
+    for(var key in chunk.terrains){
+        if (!chunk.terrains.hasOwnProperty(key)) continue;
+        if(key == 'urban'){
+            towns = 'Населенный пункт:<br>' +
+            'Занимаемая площадь: ' + chunk.terrains.urban.percentArea + '%<br>' +
+            'Тип: ' + chunk.terrains.urban.type + '<br>' +
+            'Название: ' + chunk.terrains.urban.townId + '<hr>';
+        } else if(key == 'roads'){
+            roads = 'Дороги:<br>';
+            for(i = 0; i < chunk.terrains.roads.length; i++){
+                roads += (i + 1) + ': Размер: ' + chunk.terrains.roads[i].size +
+                ', направление: ' + chunk.terrains.roads[i].direction + '<br>';
+            }
+            roads += '<hr>';
+        } else if(key == 'rivers'){
+            rivers = 'Реки:<br>';
+            for(var i = 0; i < chunk.terrains.rivers.length; i++){
+                rivers += (i + 1) + ': Размер: ' + chunk.terrains.rivers[i].size +
+                ', направление: ' + chunk.terrains.rivers[i].direction +
+                ', качество: ' + chunk.terrains.rivers[i].quality +
+                ', мост: ' + chunk.terrains.rivers[i].bridge + '<br>';
+            }
+        } else {
+            others += key + ':<br>' +
+            'Занимаемая площадь: ' + chunk.terrains[key].percentArea + '%<br>' +
+            'Проходимость: ' + chunk.terrains[key].passability + '<br>' +
+            'Качество: ' + chunk.terrains[key].quality + '<hr>';
+        }
+    }
+
+    info += towns + roads + others + rivers;
+    return info;
+}
+
 function drawMap() {
-	var mapArray = createHTMLMap();
 	$('.chunk').each((i, item) => {
         let curChunk = mapArray[+$(item).attr("data-row")][+$(item).attr("data-col")];
         let mainTerrain = getMainTerrain(curChunk);
@@ -261,5 +342,6 @@ function drawMap() {
     });
 }
 
-drawPersons(persons);
+var mapArray = createHTMLMap(worldMap);
 drawMap();
+drawPersons(persons);

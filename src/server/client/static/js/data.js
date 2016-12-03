@@ -27,6 +27,10 @@ var persons = [
 		"PersonId":1,
 		"Name":"Тим Гарилек",
 		"Job":1,
+		"Chunk":{
+			"X":5,
+			"Y":-7
+		},
 		"PersonChr":{
 			"State":5,
 			"Health":100,
@@ -40,6 +44,10 @@ var persons = [
 		"PersonId":2,
 		"Name":"Гарольд Бек",
 		"Job":2,
+		"Chunk":{
+			"X":5,
+			"Y":-7
+		},
 		"PersonChr":{
 			"State":5,
 			"Health":100,

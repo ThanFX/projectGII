@@ -75,14 +75,14 @@ func getPerson(send chan []byte) {
 	var person conf.Person
 	var out string
 	for {
-		persons, err := db.Query("SELECT p.id, p.name, p.job_id, chr.state, chr.health, chr.hunger, chr.thirst, chr.fatigue, chr.somnolency FROM persons p JOIN person_health_characteristic chr ON chr.person_id = p.id;")
+		persons, err := db.Query("SELECT p.id, p.name, p.job_id, p.chunk->'x', p.chunk->'y', chr.state, chr.health, chr.hunger, chr.thirst, chr.fatigue, chr.somnolency FROM persons p JOIN person_health_characteristic chr ON chr.person_id = p.id;")
 		if err != nil {
 			log.Fatal("Ошибка запроса пользователей в БД: ", err)
 		}
 		defer persons.Close()
 		out = "["
 		for persons.Next() {
-			err = persons.Scan(&person.PersonId, &person.Name, &person.Job,
+			err = persons.Scan(&person.PersonId, &person.Name, &person.Job, &person.Chunk.X, &person.Chunk.Y,
 				&person.PersonChr.State, &person.PersonChr.Health, &person.PersonChr.Hunger,
 				&person.PersonChr.Thirst, &person.PersonChr.Fatigue,
 				&person.PersonChr.Somnolency)

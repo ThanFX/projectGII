@@ -20,10 +20,16 @@ type Characteristics struct {
 	Somnolency float32 `json: "somnolency"`
 }
 
+type PersonChunk struct {
+	X int `json: "x"`
+	Y int `json: "y"`
+}
+
 type Person struct {
 	PersonId  int             `json: "personId"`
 	Name      string          `json: "name"`
 	Job       int             `json: "job"`
+	Chunk     PersonChunk     `json: "chunk"`
 	PersonChr Characteristics `json: "characteristics"`
 }
 
