@@ -2,7 +2,6 @@ package client
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"server/conf"
 	"server/lib"
@@ -21,7 +20,7 @@ type Chunk struct {
 
 const (
 	startMapX = 3
-	startMapY = -9
+	startMapY = -5
 	mapWidth  = 5
 	mapHeight = 5
 )
@@ -36,22 +35,22 @@ func getTime(sendTime chan []byte) {
 		}
 		world_time, err = strconv.ParseInt(world_time_str, 10, 64)
 		//fmt.Println("Cчитанное из БД время: " + lib.GetWCTString(lib.GetWorldCalendarTime(world_time)))
-		//sendTime <- []byte("{\"key\":\"time\",\"value\":" + (lib.GetWCTJSON(lib.GetWorldCalendarTime(world_time))) + "}")
-		fmt.Println(lib.GetWCTJSON(lib.GetWorldCalendarTime(world_time)))
+		sendTime <- []byte("{\"key\":\"time\",\"value\":" + (lib.GetWCTJSON(lib.GetWorldCalendarTime(world_time))) + "}")
+		//fmt.Println(lib.GetWCTJSON(lib.GetWorldCalendarTime(world_time)))
 		time.Sleep(time.Second)
 	}
 }
 
 func getInit(send chan []byte) {
-	getMap(startMapX, startMapY, send)
 	getConfig(send)
+	getMap(startMapX, startMapY, send)
 }
 
 func getMap(startX, startY int, send chan []byte) {
 	var chunk Chunk
 	var out string
-	worldMap, err := db.Query("SELECT * FROM world_map WHERE x >= $1 AND x < $2 AND world_map.y >= $3 AND world_map.y < $4;",
-		startX, startX+mapWidth, startY, startY+mapHeight)
+	worldMap, err := db.Query("SELECT * FROM world_map WHERE x >= $1 AND x < $2 AND world_map.y <= $3 AND world_map.y > $4;",
+		startX, startX+mapWidth, startY, startY-mapHeight)
 	if err != nil {
 		log.Fatal("Ошибка запроса карты в БД: ", err)
 	}
@@ -67,8 +66,8 @@ func getMap(startX, startY int, send chan []byte) {
 	}
 	out = strings.TrimRight(out, ",")
 	out += "]}"
-	fmt.Println(out)
-	//send <- []byte("{\"key\":\"worldMap\",\"value\":" + out)
+	//fmt.Println(out)
+	send <- []byte("{\"key\":\"worldMap\",\"value\":" + out)
 }
 
 func getPerson(send chan []byte) {
@@ -97,8 +96,8 @@ func getPerson(send chan []byte) {
 		}
 		out = strings.TrimRight(out, ",")
 		out += "]}"
-		//send <- []byte("{\"key\":\"persons\",\"value\":" + out)
-		fmt.Println(out)
+		send <- []byte("{\"key\":\"persons\",\"value\":" + out)
+		//fmt.Println(out)
 		time.Sleep(time.Second * 5)
 	}
 }
@@ -109,6 +108,9 @@ func getConfig(send chan []byte) {
 	if err != nil {
 		log.Fatal("Ошибка запроса конфига состояний персонажей в БД: ", err)
 	}
-	fmt.Println(states)
+	//fmt.Println(states)
+	mapInfo := "{\"startMapX\":" + strconv.Itoa(startMapX) + ",\"startMapY\":" + strconv.Itoa(startMapY) +
+		",\"mapWidth\":" + strconv.Itoa(mapWidth) + ",\"mapHeight\":" + strconv.Itoa(mapHeight) + "}"
 	send <- []byte("{\"key\":\"states\",\"value\":" + states + "}")
+	send <- []byte("{\"key\":\"mapInfo\",\"value\":" + mapInfo + "}")
 }

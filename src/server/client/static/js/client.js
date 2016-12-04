@@ -1,3 +1,10 @@
+const PATH = '/client/static/img/resources/';
+const ROAD_Z_INDEX = 10;
+const RIVER_Z_INDEX = 20;
+var states, mapInfo;
+var mapArray = [];
+var persons = [];
+
 var setDisplayTime = function(value){
     if(+value < 10){
         value = '0' + value;
@@ -9,13 +16,20 @@ var rand = function (min, max) {
     return Math.floor(min + Math.random()*(max +1 - min));
 };
 
-var textTime = 'Сейчас '+ time.day + ' день ' + time.ten_day +
+function setTime(time) {
+	var textTime = 'Сейчас '+ time.day + ' день ' + time.ten_day +
         ' декады ' + time.month + ' месяца ' + time.year +
         ' года, ' + setDisplayTime(+time.hour) + ':' +
         setDisplayTime(+time.minute);
-$('.worldDate').text(textTime);
+	$('.worldDate').text(textTime);
+}
 
 function getPersonState(state) {
+	//console.log(state);
+	if (!states) {
+		console.log("States are undefined");
+		return false;
+	}
 	var curState = "", curStateValue = "";
 	for(var key in states) {
 		if(state == states[key]) {
@@ -141,8 +155,12 @@ function matrixArray(rows, columns) {
 }
 
 function createMapArray(worldMap) {
+	//console.log(mapInfo);
 	var mapArray = matrixArray(mapInfo.mapWidth, mapInfo.mapHeight);
+	//console.log(mapArray);
 	worldMap.forEach((chunk, i)=>{
+		//console.log(mapInfo.startMapY - chunk.y);
+		//console.log(chunk.x - mapInfo.startMapX);
 		mapArray[mapInfo.startMapY - chunk.y][chunk.x - mapInfo.startMapX] = {
 			"x": chunk.x,
 			"y": chunk.y,
@@ -341,7 +359,3 @@ function drawMap() {
         }
     });
 }
-
-var mapArray = createHTMLMap(worldMap);
-drawMap();
-drawPersons(persons);

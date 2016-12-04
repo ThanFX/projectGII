@@ -20,30 +20,28 @@ window.onload = function () {
 
 			switch (message.key) {
 				case "time":
-					wd.innerText = 'Сейчас '+ message.value.day + ' день ' + message.value.ten_day +
-        ' декады ' + message.value.month + ' месяца ' + message.value.year +
-        ' года, ' + setDisplayTime(+message.value.hour) + ':' +
-        setDisplayTime(+message.value.minute);
+					setTime(message.value);
 					break;
 				case "worldMap":
-					console.log(message.value);
+					mapArray = createHTMLMap(message.value);
+                    drawMap();
 					break;
 				case "persons":
-					console.log(message.value);
+					if(persons.length == 0) {
+                        persons = message.value;
+                        drawPersons(persons);    
+                    } else {
+                        persons = message.value;
+                        updatePersonChr(persons);
+                    }
 					break;
 				case "states":
-					console.log(message.value);
+					states = message.value;
 					break;
+                case "mapInfo":
+                    mapInfo = message.value;
+                    break;
 			}
-
-			//console.log(evt.data)
-			/*
-			var messages = evt.data.split('\n');
-            for (var i = 0; i < messages.length; i++) {
-                var item = document.createElement("div");
-                item.innerText = messages[i];
-            }
-			*/
         };
     } else {
         var item = document.createElement("div");
