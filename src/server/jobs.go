@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"server/conf"
 	"server/lib"
@@ -82,7 +81,7 @@ func state_job() {
 	}
 
 	cTime := lib.GetWorldCalendarTime(lib.GetNowWorldTime())
-	fmt.Println("Проверка состояний началась в ", lib.GetWCTString(cTime))
+	//fmt.Println("Проверка состояний началась в ", lib.GetWCTString(cTime))
 
 	cH, err := strconv.Atoi(cTime["hour"])
 	if err != nil {
@@ -114,8 +113,8 @@ func ed_job() {
 		return
 	}
 
-	cTime := lib.GetWorldCalendarTime(lib.GetNowWorldTime())
-	fmt.Println("Едим и пьём в ", lib.GetWCTString(cTime))
+	//cTime := lib.GetWorldCalendarTime(lib.GetNowWorldTime())
+	//fmt.Println("Едим и пьём в ", lib.GetWCTString(cTime))
 
 	_, err := db.Exec(`
 		UPDATE person_health_characteristic SET thirst = $1 WHERE
@@ -139,8 +138,8 @@ func hts_job() {
 		return
 	}
 
-	cTime := lib.GetWorldCalendarTime(lib.GetNowWorldTime())
-	fmt.Println("Проверка работы началась в ", lib.GetWCTString(cTime))
+	//cTime := lib.GetWorldCalendarTime(lib.GetNowWorldTime())
+	//fmt.Println("Проверка работы началась в ", lib.GetWCTString(cTime))
 
 	_, err := db.Exec(`
 		UPDATE person_health_characteristic SET
