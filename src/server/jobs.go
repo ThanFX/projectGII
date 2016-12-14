@@ -105,6 +105,7 @@ func state_job() {
 		if err != nil {
 			log.Fatal("Ошибка пробуждения персонажей: ", err)
 		}
+		create_works()
 	}
 }
 
@@ -175,4 +176,8 @@ func hts_job() {
 	if err != nil {
 		log.Fatal("Ошибка обновления характерстик бодрствующих персонажей: ", err)
 	}
+}
+
+func create_works() {
+
 }
