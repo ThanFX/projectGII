@@ -2,10 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"math/rand"
 	"server/conf"
 	"server/lib"
 	"strconv"
+	"time"
 
 	"github.com/robfig/cron"
 	"github.com/stretchr/objx"
@@ -179,5 +182,42 @@ func hts_job() {
 }
 
 func create_works() {
-
+	var personId, countTask, preferSkillId int
+	// Получаем список персонажей, которые находятся в состоянии "домашние дела"
+	persons, err := db.Query("SELECT p.id FROM persons p JOIN person_health_characteristic chr ON chr.person_id = p.id WHERE chr.state = 5;")
+	if err != nil {
+		log.Fatal("Ошибка запроса пользователей в БД: ", err)
+	}
+	defer persons.Close()
+	for persons.Next() {
+		err = persons.Scan(&personId)
+		if err != nil {
+			log.Fatal("Ошибка парсинга списка персонажей: ", err)
+		}
+		// Получаем количество запланированных (время начала работы в будущем) работ по каждому персонажу
+		err = db.QueryRow("SELECT count(id) FROM tasks WHERE person_id = $1 AND start_time > $2;", personId, lib.GetNowWorldTime()).Scan(&countTask)
+		if err != nil {
+			log.Fatal("Ошибка получения количества запланированных задач: ", err)
+		}
+		// Нет запланированных работ - назначаем
+		if countTask == 0 {
+			err = db.QueryRow("SELECT skill_id FROM person_skills WHERE person_id = $1 ORDER BY worth DESC LIMIT 1;", personId).Scan(&preferSkillId)
+			if err != nil {
+				log.Fatal("Ошибка получения наилучшей работы: ", err)
+			}
+			rand.Seed(time.Now().UTC().UnixNano())
+			randTime := rand.Int63n(6600) + 600
+			nowTime := lib.GetNowWorldTime()
+			_, err = db.Exec(`
+						INSERT INTO tasks(
+            				person_id, skill_id, start_time, finish_time, type, result, create_time)
+    					VALUES ($1, $2, $3, $3, $4, $5, $6);
+					`,
+				personId, preferSkillId, nowTime+randTime, "create", "{}", nowTime)
+			if err != nil {
+				log.Fatal("Ошибка при создании задачи на новую работу: ", err)
+			}
+			fmt.Println("Создали работу для ", personId)
+		}
+	}
 }
