@@ -76,6 +76,11 @@ func create_check(world_time_speed int) {
 	ed_cron.AddFunc(ed_period, ed_job)
 	go ed_job()
 	ed_cron.Start()
+
+	task_cron := cron.New()
+	task_cron.AddFunc(state_period, task_job)
+	go task_job()
+	task_cron.Start()
 }
 
 func state_job() {
@@ -181,6 +186,7 @@ func hts_job() {
 	}
 }
 
+// Создаём задачи на старт работ для персонажей
 func create_works() {
 	var personId, countTask, preferSkillId int
 	// Получаем список персонажей, которые находятся в состоянии "домашние дела"
@@ -189,6 +195,7 @@ func create_works() {
 		log.Fatal("Ошибка запроса пользователей в БД: ", err)
 	}
 	defer persons.Close()
+	rand.Seed(time.Now().UTC().UnixNano())
 	for persons.Next() {
 		err = persons.Scan(&personId)
 		if err != nil {
@@ -205,7 +212,6 @@ func create_works() {
 			if err != nil {
 				log.Fatal("Ошибка получения наилучшей работы: ", err)
 			}
-			rand.Seed(time.Now().UTC().UnixNano())
 			randTime := rand.Int63n(6600) + 600
 			nowTime := lib.GetNowWorldTime()
 			_, err = db.Exec(`
@@ -220,4 +226,8 @@ func create_works() {
 			fmt.Println("Создали работу для ", personId)
 		}
 	}
+}
+
+func task_job() {
+
 }
