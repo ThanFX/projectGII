@@ -234,17 +234,17 @@ func create_works() {
 			}
 			//fmt.Println("Создали работу ", createTaskId, " для ", personId)
 
-			steps := "{\"step\":{"
+			steps := "{"
 			step := 1
 			stepTime := nowTime + randTime
 			for stepTime < (nowTime + 12*3600) {
 				stepTime += rand.Int63n(3000) + 600
-				steps += ("\"" + strconv.Itoa(step) + "\":{\"time\":" + strconv.FormatInt(stepTime, 10))
+				steps += ("\"" + strconv.Itoa(step) + "\":{\"finish_time\":" + strconv.FormatInt(stepTime, 10))
 				steps += "},"
 				step++
 			}
 			steps = strings.TrimRight(steps, ",")
-			steps += "}}"
+			steps += "}"
 			//fmt.Println(steps)
 			_, err = createTaskSteps.Exec(createTaskId, steps)
 			if err != nil {
@@ -255,5 +255,61 @@ func create_works() {
 }
 
 func task_job() {
+	go create_task_job()
+}
 
+func create_task_job() {
+	var taskId, personId, skillId, stepFinishTime int
+	//Ищем открытые таски на создание работы, которые уже начались
+	taskCreateQuery, _ := db.Prepare(`SELECT id, person_id, skill_id FROM tasks
+		WHERE is_done = FALSE AND type = 'create' AND finish_time < $1;`)
+	taskCreateDoneQuery, _ := db.Prepare(`UPDATE tasks SET is_done = TRUE WHERE id = $1;`)
+	personWorkStateQuery, _ := db.Prepare(`UPDATE person_health_characteristic SET state = 4 WHERE person_id = $1;`)
+	firstStepFinishQuery, _ := db.Prepare(`SELECT (steps->$1)->'finish_time' from task_steps WHERE task_id = $2;`)
+	createJobQuery, _ := db.Prepare(`INSERT INTO tasks(person_id, skill_id, start_time, finish_time, type, result, create_time, step)
+    	VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`)
+
+	nowTime := lib.GetNowWorldTime()
+	taskCreateList, err := taskCreateQuery.Query(nowTime)
+	if err != nil {
+		log.Fatal("Ошибка получения наступивших задач на старт работ: ", err)
+	}
+	defer taskCreateList.Close()
+	// Для каждой такой таски запрашиваем первый шаг, создаём таску на работу по нему и переводим состояние персонажа в "work"
+	for taskCreateList.Next() {
+		err = taskCreateList.Scan(&taskId, &personId, &skillId)
+		if err != nil {
+			log.Fatal("Ошибка парсинга списка наступивших задач на старт работ: ", err)
+		}
+		//Получаем время завершения первого шага
+		step := 1
+		err = firstStepFinishQuery.QueryRow(step, taskId).Scan(&stepFinishTime)
+		if err != nil {
+			log.Fatal("Ошибка получения времени заверешения первого шага работы ", taskId, ": ", err)
+		}
+		// Если шаг уже завершен - перебираем шаги, пока не наткнёмся на завершенный
+		for int64(stepFinishTime) < nowTime {
+			step++
+			err = firstStepFinishQuery.QueryRow(step, taskId).Scan(&stepFinishTime)
+			if err != nil {
+				log.Fatal("Ошибка получения времени заверешения ", step, " шага работы ", taskId, ": ", err)
+			}
+		}
+		// Создаём задачу на первый шаг работы
+		_, err = createJobQuery.Exec(personId, skillId, nowTime, stepFinishTime, "work", "{}", nowTime, step)
+		if err != nil {
+			log.Fatal("Ошибка создания задачи на ", step, " шаг работы ", taskId, ": ", err)
+		}
+		//Закрываем задачу на создание работы
+		_, err = taskCreateDoneQuery.Exec(taskId)
+		if err != nil {
+			log.Fatal("Ошибка закрытия задачи на старт работы ", taskId, ": ", err)
+		}
+		//Переводим персонажа в "рабочий режим"
+		_, err = personWorkStateQuery.Exec(personId)
+		if err != nil {
+			log.Fatal("Ошибка перевода персонажа ", personId, " в состояние \"работа\": ", err)
+		}
+		log.Println("Успешно стартанули работу ", taskId, " для персонажа ", personId)
+	}
 }
