@@ -2,12 +2,12 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"math/rand"
 	"server/conf"
 	"server/lib"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/robfig/cron"
@@ -186,9 +186,9 @@ func hts_job() {
 	}
 }
 
-// Создаём задачи на старт работ для персонажей
+// Создаём задачи (и массив шагов выполнения для задач) на старт работ для персонажей
 func create_works() {
-	var personId, countTask, preferSkillId int
+	var personId, countTask, preferSkillId, createTaskId int
 	// Получаем список персонажей, которые находятся в состоянии "домашние дела"
 	persons, err := db.Query("SELECT p.id FROM persons p JOIN person_health_characteristic chr ON chr.person_id = p.id WHERE chr.state = 5;")
 	if err != nil {
@@ -208,22 +208,48 @@ func create_works() {
 		}
 		// Нет запланированных работ - назначаем
 		if countTask == 0 {
+			createTask, err := db.Prepare(`INSERT INTO tasks(person_id, skill_id, start_time, finish_time, type, result, create_time)
+    			VALUES ($1, $2, $3, $3, $4, $5, $6) RETURNING id`)
+			if err != nil {
+				log.Fatal("Ошибка подготовки запроса на создание работы: ", err)
+			}
+			createTaskSteps, err := db.Prepare(`INSERT INTO task_steps(task_id, steps) VALUES ($1, $2)`)
+			if err != nil {
+				log.Fatal("Ошибка подготовки запроса на создание шагов работы: ", err)
+			}
 			err = db.QueryRow("SELECT skill_id FROM person_skills WHERE person_id = $1 ORDER BY worth DESC LIMIT 1;", personId).Scan(&preferSkillId)
 			if err != nil {
 				log.Fatal("Ошибка получения наилучшей работы: ", err)
 			}
 			randTime := rand.Int63n(6600) + 600
 			nowTime := lib.GetNowWorldTime()
-			_, err = db.Exec(`
-						INSERT INTO tasks(
-            				person_id, skill_id, start_time, finish_time, type, result, create_time)
-    					VALUES ($1, $2, $3, $3, $4, $5, $6);
-					`,
-				personId, preferSkillId, nowTime+randTime, "create", "{}", nowTime)
+
+			err = createTask.QueryRow(personId, preferSkillId, nowTime+randTime, "create", "{}", nowTime).Scan(&createTaskId)
 			if err != nil {
 				log.Fatal("Ошибка при создании задачи на новую работу: ", err)
 			}
-			fmt.Println("Создали работу для ", personId)
+
+			if err != nil {
+				log.Fatal("Ошибка при получении id созданной задачи: ", err)
+			}
+			//fmt.Println("Создали работу ", createTaskId, " для ", personId)
+
+			steps := "{\"step\":{"
+			step := 1
+			stepTime := nowTime + randTime
+			for stepTime < (nowTime + 12*3600) {
+				stepTime += rand.Int63n(3000) + 600
+				steps += ("\"" + strconv.Itoa(step) + "\":{\"time\":" + strconv.FormatInt(stepTime, 10))
+				steps += "},"
+				step++
+			}
+			steps = strings.TrimRight(steps, ",")
+			steps += "}}"
+			//fmt.Println(steps)
+			_, err = createTaskSteps.Exec(createTaskId, steps)
+			if err != nil {
+				log.Fatal("Ошибка при создании шагов новой работы: ", err)
+			}
 		}
 	}
 }

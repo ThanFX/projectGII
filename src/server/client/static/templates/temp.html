@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Вспомогательные функции</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+</head>
+<body>
+	<input type="" class="time_inp">
+	<input type="button" class="time_but" value="Пересчитать">
+	<ul class="out"></ul>
+	<script type="text/javascript">
+		function getTime(time_now) {
+			let time = {};
+			time.year = Math.floor(time_now / 31104000);
+			time_now -= time.year*31104000;
+			time.year++;
+			time.month = Math.floor(time_now / 2592000);
+			time_now -= time.month*2592000;
+			time.month++;
+			time.ten_day = Math.floor(time_now / 864000);
+			time_now -= time.ten_day*864000;
+			time.ten_day++;
+			time.day = Math.floor(time_now / 86400);
+			time_now -= time.day*86400;
+			time.day++;
+			time.hour = Math.floor(time_now / 3600);
+			time_now -= time.hour*3600;
+			time.minute = Math.floor(time_now / 60);
+			return time;	
+		}
+
+		var setDisplayTime = function(value){
+		    if(+value < 10){
+		        value = '0' + value;
+		    }
+		    return value;
+		};
+
+		function getTextTime(time) {
+		return time.day + ' день ' + time.ten_day +
+	        ' декады ' + time.month + ' месяца ' + time.year +
+	        ' года, ' + setDisplayTime(+time.hour) + ':' +
+	        setDisplayTime(+time.minute);
+		}
+
+		window.onload = function() {
+			$('.time_but').click(function(event) {
+				let time_now = $('.time_inp').val();
+				$('.time_inp').val("");
+				let time_string = '<ul>' + time_now + ': ' + getTextTime(getTime(time_now)) + '</ul>';
+				$('.out').append(time_string);
+				//console.log();
+			});
+		}
+	</script>
+</body>
+</html>
