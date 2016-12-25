@@ -1,7 +1,7 @@
 const PATH = '/client/static/img/resources/';
 const ROAD_Z_INDEX = 10;
 const RIVER_Z_INDEX = 20;
-var states, mapInfo;
+let states, mapInfo;
 var mapArray = [];
 var persons = [];
 
@@ -57,10 +57,10 @@ function createPerson(person) {
 		},
 		on: {
 			click: function(event) {
-				if($(this).find('.person-charasteristics').css('display') == 'none') {
-	        		$(this).find('.person-charasteristics').animate({height: 'show'}, 200);
+				if($(this).find('.person-characteristics').css('display') == 'none') {
+	        		$(this).find('.person-characteristics').animate({height: 'show'}, 200);
 	    		} else {
-	        		$(this).find('.person-charasteristics').animate({height: 'hide'}, 100);
+	        		$(this).find('.person-characteristics').animate({height: 'hide'}, 100);
 	    		}
 			}
 		},
@@ -73,7 +73,7 @@ function createPerson(person) {
 			text: "x: " + person.Chunk.X + ", y: " + person.Chunk.Y
 		}))
 		.add($('<div>', {
-			class: "person-charasteristics",
+			class: "person-characteristics",
 			append: $('<div>', {
 				class: "state",
 				text: "Состояние: " + getPersonState(person.PersonChr.State)

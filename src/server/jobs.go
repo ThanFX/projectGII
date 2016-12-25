@@ -45,7 +45,7 @@ func create_check(world_time_speed int) {
 	var res string
 	var check CheckPeriods
 
-	err := db.QueryRow("SELECT value::json FROM config WHERE id = 'check_periods'").Scan(&res)
+	err := db.QueryRow(`SELECT value::json FROM config WHERE id = 'check_periods'`).Scan(&res)
 	if err != nil {
 		log.Fatal("Ошибка запроса периодов проверки в БД")
 	}
@@ -115,6 +115,7 @@ func state_job() {
 		}
 		create_works()
 	}
+
 }
 
 func ed_job() {
@@ -184,13 +185,31 @@ func hts_job() {
 	if err != nil {
 		log.Fatal("Ошибка обновления характерстик бодрствующих персонажей: ", err)
 	}
+	_, err = db.Exec(`
+		UPDATE person_health_characteristic SET
+			hunger = hunger + ($1 * (($5 - last_htfs_update) / 3600.0)),
+			thirst = thirst + ($2 * (($5 - last_htfs_update) / 3600.0)),
+			fatigue = GREATEST(0.0, fatigue + ($3 * (($5 - last_htfs_update) / 3600.0))),
+			somnolency = GREATEST(0.0, somnolency + ($4 * (($5 - last_htfs_update) / 3600.0))),
+			last_htfs_update = $5
+		WHERE state = 4
+		;`,
+		stateSpeeds.Get("work.hunger").Float64(),
+		stateSpeeds.Get("work.thirst").Float64(),
+		stateSpeeds.Get("work.fatigue").Float64(),
+		stateSpeeds.Get("work.somnolency").Float64(),
+		lib.GetNowWorldTime())
+	if err != nil {
+		log.Fatal("Ошибка обновления характерстик бодрствующих персонажей: ", err)
+	}
 }
 
 // Создаём задачи (и массив шагов выполнения для задач) на старт работ для персонажей
 func create_works() {
 	var personId, countTask, preferSkillId, createTaskId int
 	// Получаем список персонажей, которые находятся в состоянии "домашние дела"
-	persons, err := db.Query("SELECT p.id FROM persons p JOIN person_health_characteristic chr ON chr.person_id = p.id WHERE chr.state = 5;")
+	persons, err := db.Query(`SELECT p.id FROM persons p JOIN person_health_characteristic chr
+		ON chr.person_id = p.id WHERE chr.state = 5;`)
 	if err != nil {
 		log.Fatal("Ошибка запроса пользователей в БД: ", err)
 	}
@@ -201,15 +220,18 @@ func create_works() {
 		if err != nil {
 			log.Fatal("Ошибка парсинга списка персонажей: ", err)
 		}
-		// Получаем количество запланированных (время начала работы в будущем) работ по каждому персонажу
-		err = db.QueryRow("SELECT count(id) FROM tasks WHERE person_id = $1 AND start_time > $2;", personId, lib.GetNowWorldTime()).Scan(&countTask)
+		// Получаем количество задач на старт работы на текущий день по каждому персонажу
+		todayTime := lib.GetNowWorldTime() - (12 * 3600)
+		err = db.QueryRow(`SELECT count(id) FROM tasks WHERE type = 'create' AND person_id = $1 AND finish_time > $2;`,
+			personId, todayTime).Scan(&countTask)
 		if err != nil {
 			log.Fatal("Ошибка получения количества запланированных задач: ", err)
 		}
 		// Нет запланированных работ - назначаем
 		if countTask == 0 {
-			createTask, err := db.Prepare(`INSERT INTO tasks(person_id, skill_id, start_time, finish_time, type, result, create_time)
-    			VALUES ($1, $2, $3, $3, $4, $5, $6) RETURNING id`)
+			createTask, err := db.Prepare(`INSERT INTO
+				tasks(person_id, skill_id, start_time, finish_time, type, result, create_time)
+    				VALUES ($1, $2, $3, $3, $4, $5, $6) RETURNING id`)
 			if err != nil {
 				log.Fatal("Ошибка подготовки запроса на создание работы: ", err)
 			}
@@ -217,14 +239,16 @@ func create_works() {
 			if err != nil {
 				log.Fatal("Ошибка подготовки запроса на создание шагов работы: ", err)
 			}
-			err = db.QueryRow("SELECT skill_id FROM person_skills WHERE person_id = $1 ORDER BY worth DESC LIMIT 1;", personId).Scan(&preferSkillId)
+			err = db.QueryRow(`SELECT skill_id FROM person_skills WHERE person_id = $1
+				ORDER BY worth DESC LIMIT 1;`, personId).Scan(&preferSkillId)
 			if err != nil {
 				log.Fatal("Ошибка получения наилучшей работы: ", err)
 			}
 			randTime := rand.Int63n(6600) + 600
 			nowTime := lib.GetNowWorldTime()
 
-			err = createTask.QueryRow(personId, preferSkillId, nowTime+randTime, "create", "{}", nowTime).Scan(&createTaskId)
+			err = createTask.QueryRow(personId, preferSkillId, nowTime+randTime, "create", "{}",
+				nowTime).Scan(&createTaskId)
 			if err != nil {
 				log.Fatal("Ошибка при создании задачи на новую работу: ", err)
 			}
@@ -239,7 +263,8 @@ func create_works() {
 			stepTime := nowTime + randTime
 			for stepTime < (nowTime + 12*3600) {
 				stepTime += rand.Int63n(3000) + 600
-				steps += ("\"" + strconv.Itoa(step) + "\":{\"finish_time\":" + strconv.FormatInt(stepTime, 10))
+				steps += "\"" + strconv.Itoa(step) + "\":{\"finish_time\":" +
+					strconv.FormatInt(stepTime, 10)
 				steps += "},"
 				step++
 			}
@@ -263,11 +288,8 @@ func create_task_job() {
 	//Ищем открытые таски на создание работы, которые уже начались
 	taskCreateQuery, _ := db.Prepare(`SELECT id, person_id, skill_id FROM tasks
 		WHERE is_done = FALSE AND type = 'create' AND finish_time < $1;`)
-	taskCreateDoneQuery, _ := db.Prepare(`UPDATE tasks SET is_done = TRUE WHERE id = $1;`)
-	personWorkStateQuery, _ := db.Prepare(`UPDATE person_health_characteristic SET state = 4 WHERE person_id = $1;`)
-	firstStepFinishQuery, _ := db.Prepare(`SELECT (steps->$1)->'finish_time' from task_steps WHERE task_id = $2;`)
-	createJobQuery, _ := db.Prepare(`INSERT INTO tasks(person_id, skill_id, start_time, finish_time, type, result, create_time, step)
-    	VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`)
+	firstStepFinishQuery, _ := db.Prepare(`SELECT (steps->$1)->'finish_time' from task_steps
+		WHERE task_id = $2;`)
 
 	nowTime := lib.GetNowWorldTime()
 	taskCreateList, err := taskCreateQuery.Query(nowTime)
@@ -292,14 +314,25 @@ func create_task_job() {
 			step++
 			err = firstStepFinishQuery.QueryRow(step, taskId).Scan(&stepFinishTime)
 			if err != nil {
-				log.Fatal("Ошибка получения времени заверешения ", step, " шага работы ", taskId, ": ", err)
+				log.Fatal("Ошибка получения времени завершения ", step, " шага работы ",
+					taskId, ": ", err)
 			}
 		}
-		// Создаём задачу на первый шаг работы
-		_, err = createJobQuery.Exec(personId, skillId, nowTime, stepFinishTime, "work", "{}", nowTime, step)
+		// Оборачиваем следующие изменения в транзакцию
+		tx, err := db.Begin()
 		if err != nil {
-			log.Fatal("Ошибка создания задачи на ", step, " шаг работы ", taskId, ": ", err)
+			log.Fatal("Ошибка открытия транзакции создания задачи на работу: ", err)
 		}
+		defer tx.Rollback()
+		createJobQuery, _ := tx.Prepare(`INSERT INTO tasks(person_id, skill_id, start_time, finish_time, type,
+			result, create_time, step) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`)
+		defer createJobQuery.Close()
+		taskCreateDoneQuery, _ := tx.Prepare(`UPDATE tasks SET is_done = TRUE WHERE id = $1;`)
+		defer taskCreateDoneQuery.Close()
+		personWorkStateQuery, _ := tx.Prepare(`UPDATE person_health_characteristic SET state = 4
+			WHERE person_id = $1;`)
+		defer personWorkStateQuery.Close()
+
 		//Закрываем задачу на создание работы
 		_, err = taskCreateDoneQuery.Exec(taskId)
 		if err != nil {
@@ -309,6 +342,15 @@ func create_task_job() {
 		_, err = personWorkStateQuery.Exec(personId)
 		if err != nil {
 			log.Fatal("Ошибка перевода персонажа ", personId, " в состояние \"работа\": ", err)
+		}
+		// Создаём задачу на первый шаг работы
+		_, err = createJobQuery.Exec(personId, skillId, nowTime, stepFinishTime, "work", "{}", nowTime, step)
+		if err != nil {
+			log.Fatal("Ошибка создания задачи на ", step, " шаг работы ", taskId, ": ", err)
+		}
+		err = tx.Commit()
+		if err != nil {
+			log.Fatal("Ошибка открытия транзакции создания задачи на работу: ", err)
 		}
 		log.Println("Успешно стартанули работу ", taskId, " для персонажа ", personId)
 	}
