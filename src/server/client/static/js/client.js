@@ -43,6 +43,12 @@ function getPersonState(state) {
 		case "chores":
 			curStateValue = "Занимается домашними делами";
 			break;
+		case "work":
+			curStateValue = "Работает";
+			break;
+		case "rest":
+			curStateValue = "Отдыхает";
+			break;
 		default:
 			curStateValue = "Нужно добавить описание!";
 	}

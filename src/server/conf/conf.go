@@ -8,7 +8,10 @@ import (
 )
 
 const (
-	ADDR string = ":8080"
+	ADDR                         string  = ":8080"
+	MAX_SOMNOLENCY_FOR_STOP_WORK float32 = 30.0
+	MAX_FATIGUE_FOR_STOP_WORK    float32 = 60.0
+	MIN_FATIGUE_FOR_START_WORK           = 20.0
 )
 
 type Characteristics struct {
