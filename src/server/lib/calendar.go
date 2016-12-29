@@ -75,3 +75,12 @@ func GetNowWorldTime() int64 {
 func SetNowWorldTime(time int64) {
 	nowWorldTime = time
 }
+
+func GetStartDayTime(nowTime int64) int64 {
+	cTime := GetWorldCalendarTime(nowTime)
+	startDayTime := nowTime
+	m, _ := strconv.Atoi(cTime["minute"])
+	h, _ := strconv.Atoi(cTime["hour"])
+	startDayTime -= int64(h*3600 + m*60)
+	return startDayTime
+}
