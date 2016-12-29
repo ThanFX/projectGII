@@ -63,6 +63,25 @@ func initQueries() {
 	queries["createTask"].text = `INSERT INTO tasks(person_id, skill_id, daytime, steps, result, create_time)
     	VALUES ($1, $2, $3, $4, $5, $6)`
 	queries["createTask"].queryErrorText = `Ошибка создания задачи на работу для персонажа %d в %d: $s`
+	// $1 - state, $2 - personId
+	queries["setPersonState"].text = `UPDATE person_health_characteristic SET state = $1 WHERE person_id = $2;`
+	queries["setPersonState"].queryErrorText = `Ошибка установки состояния \"%s\" для персонажа %d: %s`
+	//$1 - taskId, $2 - step
+	queries["setStepDone"].text = `UPDATE task_steps SET is_done = TRUE WHERE task_id = $1 AND step = $2;`
+	queries["setStepDone"].queryErrorText = `Ошибка закрытия шага %d для задачи %d: %s`
+	//$1 - taskId, $2 - step
+	queries["getStepData"].text = `SELECT (steps->$2)->'finish_time' from tasks WHERE id = $1;`
+	queries["getStepData"].queryErrorText = `Ошибка получения данных шага %d задачи %d: %s`
+	//$1 - taskId
+	queries["setTaskDone"].text = `UPDATE tasks SET is_done = TRUE WHERE task_id = $1;`
+	queries["setTaskDone"].queryErrorText = `Ошибка закрытия задачи %d: %s`
+	//
+	queries["createNewStep"].text = `INSERT INTO task_steps(task_id, step, start_time, finish_time, type, create_time)
+    	VALUES ($1, $2, $3, $4, $5, $6);`
+	queries["createNewStep"].queryErrorText = `Ошибка создания шага %d задачи %d: %s`
+	queries["getFinishStep"].text = `SELECT ts.task_id, t.person_id, t.skill_id, t.type, t.step, t.finish_time, chr.fatigue, chr.somnolency FROM tasks t
+		JOIN person_health_characteristic chr ON chr.person_id = t.person_id
+		WHERE t.type IN ('work', 'rest') AND t.is_done = FALSE AND t.finish_time < $1;`
 }
 
 func prepareQueries() {
@@ -139,7 +158,7 @@ func state_job() {
 		_, err := db.Exec(`
 		UPDATE person_health_characteristic SET state = $1 WHERE
 			somnolency > 40.0;
-		`, 1)
+		`, "sleep")
 		if err != nil {
 			log.Fatal("Ошибка засыпания персонажей: ", err)
 		}
@@ -148,11 +167,12 @@ func state_job() {
 		_, err := db.Exec(`
 		UPDATE person_health_characteristic SET state = $1 WHERE
 			somnolency <= 6.0;
-		`, 5)
+		`, "chores")
 		if err != nil {
 			log.Fatal("Ошибка пробуждения персонажей: ", err)
 		}
-		go create_works()
+		// И сразу после пробуждения начали создавать задачи на сегодняшнюю работу
+		go create_task()
 	}
 
 }
@@ -168,7 +188,7 @@ func ed_job() {
 	_, err := db.Exec(`
 		UPDATE person_health_characteristic SET thirst = $1 WHERE
 			thirst >= 6.0 AND state != $2;
-		`, 0.0, 1)
+		`, 0.0, "sleep")
 	if err != nil {
 		log.Fatal("Ошибка утоления жажды: ", err)
 	}
@@ -176,7 +196,7 @@ func ed_job() {
 	_, err = db.Exec(`
 		UPDATE person_health_characteristic SET thirst = $1, hunger = $2 WHERE
 			hunger >= 3.0 AND state != $3;
-		`, 0.0, 0.0, 1)
+		`, 0.0, 0.0, "sleep")
 	if err != nil {
 		log.Fatal("Ошибка утоления голода: ", err)
 	}
@@ -197,7 +217,7 @@ func hts_job() {
 			fatigue = GREATEST(0.0, fatigue + ($3 * (($5 - last_htfs_update) / 3600.0))),
 			somnolency = GREATEST(0.0, somnolency + ($4 * (($5 - last_htfs_update) / 3600.0))),
 			last_htfs_update = $5
-		WHERE state = 1
+		WHERE state = 'sleep'
 		;`,
 		stateSpeeds.Get("sleep.hunger").Float64(),
 		stateSpeeds.Get("sleep.thirst").Float64(),
@@ -214,7 +234,7 @@ func hts_job() {
 			fatigue = GREATEST(0.0, fatigue + ($3 * (($5 - last_htfs_update) / 3600.0))),
 			somnolency = GREATEST(0.0, somnolency + ($4 * (($5 - last_htfs_update) / 3600.0))),
 			last_htfs_update = $5
-		WHERE state = 5
+		WHERE state = 'chores'
 		;`,
 		stateSpeeds.Get("chores.hunger").Float64(),
 		stateSpeeds.Get("chores.thirst").Float64(),
@@ -222,7 +242,7 @@ func hts_job() {
 		stateSpeeds.Get("chores.somnolency").Float64(),
 		lib.GetNowWorldTime())
 	if err != nil {
-		log.Fatal("Ошибка обновления характерстик бодрствующих персонажей: ", err)
+		log.Fatal("Ошибка обновления характерстик персонажей, занимающихся домашними делами: ", err)
 	}
 	_, err = db.Exec(`
 		UPDATE person_health_characteristic SET
@@ -231,7 +251,7 @@ func hts_job() {
 			fatigue = GREATEST(0.0, fatigue + ($3 * (($5 - last_htfs_update) / 3600.0))),
 			somnolency = GREATEST(0.0, somnolency + ($4 * (($5 - last_htfs_update) / 3600.0))),
 			last_htfs_update = $5
-		WHERE state = 4
+		WHERE state = 'work'
 		;`,
 		stateSpeeds.Get("work.hunger").Float64(),
 		stateSpeeds.Get("work.thirst").Float64(),
@@ -239,12 +259,29 @@ func hts_job() {
 		stateSpeeds.Get("work.somnolency").Float64(),
 		lib.GetNowWorldTime())
 	if err != nil {
-		log.Fatal("Ошибка обновления характерстик бодрствующих персонажей: ", err)
+		log.Fatal("Ошибка обновления характерстик работающих персонажей: ", err)
+	}
+	_, err = db.Exec(`
+		UPDATE person_health_characteristic SET
+			hunger = hunger + ($1 * (($5 - last_htfs_update) / 3600.0)),
+			thirst = thirst + ($2 * (($5 - last_htfs_update) / 3600.0)),
+			fatigue = GREATEST(0.0, fatigue + ($3 * (($5 - last_htfs_update) / 3600.0))),
+			somnolency = GREATEST(0.0, somnolency + ($4 * (($5 - last_htfs_update) / 3600.0))),
+			last_htfs_update = $5
+		WHERE state = 'rest'
+		;`,
+		stateSpeeds.Get("rest.hunger").Float64(),
+		stateSpeeds.Get("rest.thirst").Float64(),
+		stateSpeeds.Get("rest.fatigue").Float64(),
+		stateSpeeds.Get("rest.somnolency").Float64(),
+		lib.GetNowWorldTime())
+	if err != nil {
+		log.Fatal("Ошибка обновления характерстик отдыхающих персонажей: ", err)
 	}
 }
 
 // Создаём задачи (и массив шагов выполнения для задач) на старт работ для персонажей
-func create_works() {
+func create_task() {
 	var personId int
 	nowTime := lib.GetNowWorldTime()
 	startDayTime := lib.GetStartDayTime(nowTime)
@@ -298,10 +335,10 @@ func getPreferPersonSkill(personId int) int {
 }
 
 func task_job() {
-	go create_task_job()
 	go step_task_job()
 }
 
+/*
 func create_task_job() {
 	var taskId, personId, skillId, stepFinishTime int
 	//Ищем открытые таски на создание работы, которые уже начались
@@ -374,6 +411,7 @@ func create_task_job() {
 		log.Println("Успешно стартанули работу ", taskId, " для персонажа ", personId)
 	}
 }
+*/
 
 func step_task_job() {
 	var taskId, personId, step, skillId, finish_time int
@@ -404,7 +442,7 @@ func step_task_job() {
 			} else {
 				// Если же устали или уже отдыхали на работе - всё, завершаем рабочий день и отдых, уходим заниматься домашними делами
 				setTaskDone(taskId)
-				setPersonState(personId, 5)
+				setPersonState(personId, "chores")
 			}
 		} else {
 			// А вот если спать ещё не хочется, смотрим на то, чем занимались
@@ -413,7 +451,7 @@ func step_task_job() {
 				// устали - отдыхаем
 				if fatifue > conf.MAX_FATIGUE_FOR_STOP_WORK {
 					setTaskDone(taskId)
-					setPersonState(personId, 2)
+					setPersonState(personId, "rest")
 					newStep("rest", step+1, taskId, skillId, personId, finish_time)
 				} else {
 					// не устали - продолжаем работать
@@ -425,7 +463,7 @@ func step_task_job() {
 				// нормально отдохнули - продолжаем работать
 				if fatifue < conf.MIN_FATIGUE_FOR_START_WORK {
 					setTaskDone(taskId)
-					setPersonState(personId, 4)
+					setPersonState(personId, "work")
 					newStep("work", step+1, taskId, skillId, personId, finish_time)
 				} else {
 					// не успели отдохнуть - продолжаем отдых
@@ -437,67 +475,55 @@ func step_task_job() {
 	}
 }
 
-func newStep(stepType string, step, taskId, skillId, personId, start_time int) {
-	createTask, _ := db.Prepare(`INSERT INTO
-		tasks(person_id, skill_id, start_time, finish_time, type, result, create_time, step)
-    	VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`)
+func createNewStep(stepType string, step, taskId, start_time int) {
 	//Получаем время завершения следующего шага
 	stepFinishTime := getNextStepData(taskId, step)
 	nowTime := lib.GetNowWorldTime()
 	//Создаём новую задачу на работу (на следующий шаг) и закрываем предыдущую
 	// TODO В будущем нужно будет смотреть на тип задачи и для рабочих добавить результаты
-	_, err := createTask.Exec(personId, skillId, start_time, stepFinishTime, stepType, "{}", nowTime, step)
+	_, err := queries["createNewStep"].query.Exec(taskId, step, start_time, stepFinishTime, stepType, nowTime)
 	if err != nil {
-		log.Fatal("Ошибка создания задачи на ", step, " шаг работы ", taskId, ": ", err)
+		log.Fatal(queries["createNewStep"].queryErrorText, step, taskId, err)
 	}
-	setTaskDone(taskId)
+}
+
+func setStepDone(taskId, step int) {
+	_, err := queries["setStepDone"].query.Exec(taskId, step)
+	if err != nil {
+		log.Fatal(queries["setStepDone"].queryErrorText, taskId, step, err)
+	}
 }
 
 func setTaskDone(taskId int) {
-	taskDoneQuery, err := db.Prepare(`UPDATE tasks SET is_done = TRUE WHERE id = $1;`)
+	_, err := queries["setTaskDone"].query.Exec(taskId)
 	if err != nil {
-		log.Fatal("Ошибка подготовки запроса на закрытие задачи: ", err)
-	}
-	_, err = taskDoneQuery.Exec(taskId)
-	if err != nil {
-		log.Fatal("Ошибка закрытия задачи ", taskId, ": ", err)
+		log.Fatal(queries["setTaskDone"].queryErrorText, taskId, err)
 	}
 }
 
-func setPersonState(personId, state int) {
-	personStateQuery, err := db.Prepare(`UPDATE person_health_characteristic SET state = $1 WHERE person_id = $2;`)
+func setPersonState(personId int, state string) {
+	_, err := queries["setPersonState"].query.Exec(state, personId)
 	if err != nil {
-		log.Fatal("Ошибка подготовки запроса на измение состояния персонажа:", err)
-	}
-	_, err = personStateQuery.Exec(state, personId)
-	if err != nil {
-		log.Fatal("Ошибка перевода персонажа ", personId, " в состояние ", state, ": ", err)
+		log.Fatalf(queries["setPersonState"].queryErrorText, state, personId, err)
 	}
 }
 
-func getNextStepData(taskId, step int) int {
-	var stepFinishTime int = 0
-	stepFinishQuery, err := db.Prepare(`SELECT (steps->$1)->'finish_time' from task_steps WHERE task_id = $2;`)
-	if err != nil {
-		log.Fatal("Ошибка подготовки запроса на получение данных ", step, " шага задачи ", taskId, ": ", err)
-	}
-	err = stepFinishQuery.QueryRow(step, taskId).Scan(&stepFinishTime)
-	if err != nil {
-		log.Fatal("Ошибка получения времени завершения ", step, " шага работы ", taskId, ": ", err)
-	}
-	// Нет больше запланированных шагов - уходим заниматься домашними делами
-	if stepFinishTime < 1 {
-		// TODO Нужен вызов функции для перехода на занятие домашними делами
-		return stepFinishTime
-	}
-	// Если шаг уже завершен - перебираем шаги, пока не наткнёмся на завершенный
+func getNextStepData(taskId, step int) int64 {
+	var stepFinishTime sql.NullInt64
 	nowTime := lib.GetNowWorldTime()
-	for int64(stepFinishTime) < nowTime {
-		step++
-		err = stepFinishQuery.QueryRow(step, taskId).Scan(&stepFinishTime)
+	for {
+		err := queries["getStepData"].query.QueryRow(taskId, step).Scan(&stepFinishTime)
 		if err != nil {
-			log.Fatal("Ошибка получения времени завершения ", step, " шага работы ", taskId, ": ", err)
+			log.Fatalf(queries["getStepData"].queryErrorText, step, taskId, err)
+		}
+		// Нет нет запланированных шагов - уходим заниматься домашними делами
+		if !stepFinishTime.Valid {
+			// TODO Нужен вызов функции для перехода на занятие домашними делами
+			return 0
+		}
+		// Если следующий шаг в будущем - принимем, иначе берём следующий шаг
+		if stepFinishTime.Int64 > nowTime {
+			return stepFinishTime.Int64
 		}
 	}
-	return stepFinishTime
 }
