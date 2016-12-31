@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"server/conf"
 	"server/lib"
@@ -52,46 +53,70 @@ func init_check() {
 }
 
 func initQueries() {
+	var emptyStmp *sql.Stmt
 	queries = make(map[string]*Query)
 	// $1 - nowTime
-	queries["getPersonWithoutWork"].text = `SELECT person_id FROM tasks WHERE daytime > $1;`
-	queries["getPersonWithoutWork"].queryErrorText = `Ошибка выполнения запроса получения списка персонажей без задач на сегодня: %s`
+	queries["getPersonWithoutWork"] = &Query{
+		emptyStmp,
+		`SELECT person_id FROM tasks WHERE daytime > $1;`,
+		`Ошибка выполнения запроса получения списка персонажей без задач на сегодня: %s`}
 	// $1 - person_id
-	queries["getPreferSkill"].text = `SELECT skill_id FROM person_skills WHERE person_id = $1 ORDER BY worth DESC LIMIT 1;`
-	queries["getPreferSkill"].queryErrorText = `Ошибка получения наилучшей работы для персонажа %d: %s`
+	queries["getPreferSkill"] = &Query{
+		emptyStmp,
+		`SELECT skill_id FROM person_skills WHERE person_id = $1 ORDER BY worth DESC LIMIT 1;`,
+		`Ошибка получения наилучшей работы для персонажа %d: %s`}
 	//
-	queries["createTask"].text = `INSERT INTO tasks(person_id, skill_id, daytime, steps, result, create_time)
-    	VALUES ($1, $2, $3, $4, $5, $6)`
-	queries["createTask"].queryErrorText = `Ошибка создания задачи на работу для персонажа %d в %d: $s`
+	queries["createTask"] = &Query{
+		emptyStmp,
+		`INSERT INTO tasks(person_id, skill_id, daytime, steps, result, create_time) VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id`,
+		`Ошибка создания задачи на работу для персонажа %d в %d: $s`}
 	// $1 - state, $2 - personId
-	queries["setPersonState"].text = `UPDATE person_health_characteristic SET state = $1 WHERE person_id = $2;`
-	queries["setPersonState"].queryErrorText = `Ошибка установки состояния \"%s\" для персонажа %d: %s`
+	queries["setPersonState"] = &Query{
+		emptyStmp,
+		`UPDATE person_health_characteristic SET state = $1 WHERE person_id = $2;`,
+		`Ошибка установки состояния \"%s\" для персонажа %d: %s`}
 	//$1 - taskId, $2 - step
-	queries["setStepDone"].text = `UPDATE task_steps SET is_done = TRUE WHERE task_id = $1 AND step = $2;`
-	queries["setStepDone"].queryErrorText = `Ошибка закрытия шага %d для задачи %d: %s`
+	queries["setStepDone"] = &Query{
+		emptyStmp,
+		`UPDATE task_steps SET is_done = TRUE WHERE task_id = $1 AND step = $2;`,
+		`Ошибка закрытия шага %d для задачи %d: %s`}
 	//$1 - taskId, $2 - step
-	queries["getStepData"].text = `SELECT (steps->$2)->'finish_time' from tasks WHERE id = $1;`
-	queries["getStepData"].queryErrorText = `Ошибка получения данных шага %d задачи %d: %s`
+	queries["getStepData"] = &Query{
+		emptyStmp,
+		`SELECT (steps->$2)->'finish_time' from tasks WHERE id = $1;`,
+		`Ошибка получения данных шага %d задачи %d: %s`}
 	//$1 - taskId
-	queries["setTaskDone"].text = `UPDATE tasks SET is_done = TRUE WHERE task_id = $1;`
-	queries["setTaskDone"].queryErrorText = `Ошибка закрытия задачи %d: %s`
+	queries["setTaskDone"] = &Query{
+		emptyStmp,
+		`UPDATE tasks SET is_done = TRUE WHERE id = $1;`,
+		`Ошибка закрытия задачи %d: %s`}
 	//
-	queries["createNewStep"].text = `INSERT INTO task_steps(task_id, step, start_time, finish_time, type, create_time)
-    	VALUES ($1, $2, $3, $4, $5, $6);`
-	queries["createNewStep"].queryErrorText = `Ошибка создания шага %d задачи %d: %s`
-	queries["getFinishStep"].text = `SELECT ts.task_id, t.person_id, t.skill_id, t.type, t.step, t.finish_time, chr.fatigue, chr.somnolency FROM tasks t
-		JOIN person_health_characteristic chr ON chr.person_id = t.person_id
-		WHERE t.type IN ('work', 'rest') AND t.is_done = FALSE AND t.finish_time < $1;`
+	queries["createNewStep"] = &Query{
+		emptyStmp,
+		`INSERT INTO task_steps(task_id, step, start_time, finish_time, type, create_time) VALUES ($1, $2, $3, $4, $5, $6);`,
+		`Ошибка создания шага %d задачи %d: %s`}
+	//
+	queries["getFinishedSteps"] = &Query{
+		emptyStmp,
+		`SELECT ts.task_id, ts.step, ts.type, t.person_id, ts.finish_time, chr.fatigue, chr.somnolency
+				FROM task_steps ts
+				JOIN tasks t on ts.task_id = t.id
+				JOIN person_health_characteristic chr ON chr.person_id = t.person_id
+				WHERE ts.is_done = FALSE AND ts.finish_time < $1;`,
+		`Ошибка получения завершившихся шагов: %s`}
 }
 
 func prepareQueries() {
 	initQueries()
+	var q Query
 	for key, _ := range queries {
 		prepareQuery, err := db.Prepare(queries[key].text)
 		if err != nil {
 			log.Fatal("Ошибка подготовки запроса ", key, ": ", err)
 		}
-		queries[key].query = prepareQuery
+		q.query = prepareQuery
+		queries[key] = &q
 	}
 }
 
@@ -111,14 +136,14 @@ func create_check(world_time_speed int) {
 	json.Unmarshal(bytes, &check)
 
 	// TODO Добавить проверку на минимальный шаг запуска в 1 секунду!!
-	state_period := strconv.Itoa(int((check.State * 60) / world_time_speed))
+	state_period := strconv.Itoa(int(math.Max(float64(check.State*60/world_time_speed), 1)))
 	state_period = "@every " + state_period + "s"
-	hts_period := strconv.Itoa(int((check.HTS * 60) / world_time_speed))
+	hts_period := strconv.Itoa(int(math.Max(float64(check.HTS*60/world_time_speed), 1)))
 	hts_period = "@every " + hts_period + "s"
-	ed_period := strconv.Itoa(int((check.ED * 60) / world_time_speed))
+	ed_period := strconv.Itoa(int(math.Max(float64(check.ED*60/world_time_speed), 1)))
 	ed_period = "@every " + ed_period + "s"
-	work_period := strconv.Itoa(int((check.Work * 60) / world_time_speed))
-	work_period = "@every " + ed_period + "s"
+	work_period := strconv.Itoa(int(math.Max(float64(check.Work*60/world_time_speed), 1)))
+	work_period = "@every " + work_period + "s"
 
 	state_cron := cron.New()
 	state_cron.AddFunc(state_period, state_job)
@@ -136,8 +161,8 @@ func create_check(world_time_speed int) {
 	ed_cron.Start()
 
 	task_cron := cron.New()
-	task_cron.AddFunc(work_period, task_job)
-	go task_job()
+	task_cron.AddFunc(work_period, step_job)
+	go step_job()
 	task_cron.Start()
 }
 
@@ -282,28 +307,32 @@ func hts_job() {
 
 // Создаём задачи (и массив шагов выполнения для задач) на старт работ для персонажей
 func create_task() {
-	var personId int
+	var personId, taskId int
 	nowTime := lib.GetNowWorldTime()
 	startDayTime := lib.GetStartDayTime(nowTime)
 	// Получаем список персонажей, у которых нет работы
+
 	persons, err := queries["getPersonWithoutWork"].query.Query(nowTime)
 	if err != nil {
 		log.Fatal(queries["getPersonWithoutWork"].queryErrorText, err)
 	}
 	defer persons.Close()
 	rand.Seed(time.Now().UTC().UnixNano())
+
 	for persons.Next() {
 		err = persons.Scan(&personId)
 		if err != nil {
 			log.Fatal("Ошибка парсинга списка персонажей: ", err)
 		}
+		fmt.Println("Получаем список персонажей - ", personId)
 		preferSkillId := getPreferPersonSkill(personId)
 		nowTime := lib.GetNowWorldTime()
 		steps := getTaskSteps(nowTime)
-		_, err = queries["createTask"].query.Exec(personId, preferSkillId, startDayTime, steps, "{}", nowTime)
+		err = queries["createTask"].query.QueryRow(personId, preferSkillId, startDayTime, steps, "{}", nowTime).Scan(&taskId)
 		if err != nil {
 			log.Fatalf(queries["createTask"].queryErrorText, personId, startDayTime, err)
 		}
+		createNewStep("wait", 0, taskId, int(nowTime))
 		fmt.Println("Создали работу для ", personId)
 	}
 }
@@ -312,8 +341,9 @@ func getTaskSteps(nowTime int64) string {
 	// Первый шаг через некоторый промежуток после пробуждения
 	stepTime := rand.Int63n(conf.MAX_MORNING_INTERVAL_BEFORE_WORK) + conf.MIN_STEP_DURATING + nowTime
 	steps := "{"
-	step := 1
-	// Создаём массив шагов, до конца текущих суток
+	step := 0
+	// Создаём массив шагов, до конца текущих суток, нулевой шаг - ошидание работы с момента пробуждения,
+	// после него начинается реальная работа
 	for stepTime < (lib.GetStartDayTime(nowTime) + 24*3600) {
 		steps += "\"" + strconv.Itoa(step) + "\":{\"finish_time\":" + strconv.FormatInt(stepTime, 10)
 		steps += "},"
@@ -334,113 +364,45 @@ func getPreferPersonSkill(personId int) int {
 	return skillId
 }
 
-func task_job() {
-	go step_task_job()
-}
-
-/*
-func create_task_job() {
-	var taskId, personId, skillId, stepFinishTime int
-	//Ищем открытые таски на создание работы, которые уже начались
-	taskCreateQuery, _ := db.Prepare(`SELECT id, person_id, skill_id FROM tasks
-		WHERE is_done = FALSE AND type = 'create' AND finish_time < $1;`)
-	firstStepFinishQuery, _ := db.Prepare(`SELECT (steps->$1)->'finish_time' from task_steps
-		WHERE task_id = $2;`)
-
-	nowTime := lib.GetNowWorldTime()
-	taskCreateList, err := taskCreateQuery.Query(nowTime)
-	if err != nil {
-		log.Fatal("Ошибка получения наступивших задач на старт работ: ", err)
-	}
-	defer taskCreateList.Close()
-	// Для каждой такой таски запрашиваем первый шаг, создаём таску на работу по нему и переводим состояние персонажа в "work"
-	for taskCreateList.Next() {
-		err = taskCreateList.Scan(&taskId, &personId, &skillId)
-		if err != nil {
-			log.Fatal("Ошибка парсинга списка наступивших задач на старт работ: ", err)
-		}
-		//Получаем время завершения первого шага
-		step := 1
-		err = firstStepFinishQuery.QueryRow(step, taskId).Scan(&stepFinishTime)
-		if err != nil {
-			log.Fatal("Ошибка получения времени завершения первого шага работы ", taskId, ": ", err)
-		}
-		// Если шаг уже завершен - перебираем шаги, пока не наткнёмся на завершенный
-		for int64(stepFinishTime) < nowTime {
-			step++
-			err = firstStepFinishQuery.QueryRow(step, taskId).Scan(&stepFinishTime)
-			if err != nil {
-				log.Fatal("Ошибка получения времени завершения ", step, " шага работы ",
-					taskId, ": ", err)
-			}
-		}
-		// Оборачиваем следующие изменения в транзакцию
-		tx, err := db.Begin()
-		if err != nil {
-			log.Fatal("Ошибка открытия транзакции создания задачи на работу: ", err)
-		}
-		defer tx.Rollback()
-		createJobQuery, _ := tx.Prepare(`INSERT INTO tasks(person_id, skill_id, start_time, finish_time, type,
-			result, create_time, step) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`)
-		defer createJobQuery.Close()
-		taskCreateDoneQuery, _ := tx.Prepare(`UPDATE tasks SET is_done = TRUE WHERE id = $1;`)
-		defer taskCreateDoneQuery.Close()
-		personWorkStateQuery, _ := tx.Prepare(`UPDATE person_health_characteristic SET state = 4
-			WHERE person_id = $1;`)
-		defer personWorkStateQuery.Close()
-
-		//Закрываем задачу на создание работы
-		_, err = taskCreateDoneQuery.Exec(taskId)
-		if err != nil {
-			log.Fatal("Ошибка закрытия задачи на старт работы ", taskId, ": ", err)
-		}
-		//Переводим персонажа в "рабочий режим"
-		_, err = personWorkStateQuery.Exec(personId)
-		if err != nil {
-			log.Fatal("Ошибка перевода персонажа ", personId, " в состояние \"работа\": ", err)
-		}
-		// Создаём задачу на первый шаг работы
-		_, err = createJobQuery.Exec(personId, skillId, nowTime, stepFinishTime, "work", "{}", nowTime, step)
-		if err != nil {
-			log.Fatal("Ошибка создания задачи на ", step, " шаг работы ", taskId, ": ", err)
-		}
-		err = tx.Commit()
-		if err != nil {
-			log.Fatal("Ошибка открытия транзакции создания задачи на работу: ", err)
-		}
-		log.Println("Успешно стартанули работу ", taskId, " для персонажа ", personId)
-	}
-}
-*/
-
-func step_task_job() {
-	var taskId, personId, step, skillId, finish_time int
+func step_job() {
+	var taskId, personId, step, finish_time int
 	var fatifue, somnolency float32
 	var taskType string
-	tasksQuery, _ := db.Prepare(`SELECT t.id, t.person_id, t.skill_id, t.type, t.step, t.finish_time, chr.fatigue, chr.somnolency FROM tasks t
-		JOIN person_health_characteristic chr ON chr.person_id = t.person_id
-		WHERE t.type IN ('work', 'rest') AND t.is_done = FALSE AND t.finish_time < $1;`)
 
 	nowTime := lib.GetNowWorldTime()
-	tasksList, err := tasksQuery.Query(nowTime)
+	//tasksList, err := queries["getFinishedSteps"].query.Query(nowTime)
+	tasksList, err := db.Query(`SELECT ts.task_id, ts.step, ts.type, t.person_id, ts.finish_time, chr.fatigue, chr.somnolency
+				FROM task_steps ts
+				JOIN tasks t on ts.task_id = t.id
+				JOIN person_health_characteristic chr ON chr.person_id = t.person_id
+				WHERE ts.is_done = FALSE AND ts.finish_time < $1;`, nowTime)
+	//fmt.Println("!")
 	if err != nil {
 		log.Fatal("Ошибка получения наступивших задач на шаги работы: ", err)
 	}
 	defer tasksList.Close()
+
 	for tasksList.Next() {
-		err = tasksList.Scan(&taskId, &personId, &skillId, &taskType, &step, &finish_time, &fatifue, &somnolency)
+		// ts.task_id, ts.step, ts.type, t.person_id, ts.finish_time, chr.fatigue, chr.somnolency
+		err = tasksList.Scan(&taskId, &step, &taskType, &personId, &finish_time, &fatifue, &somnolency)
 		if err != nil {
 			log.Fatal("Ошибка парсинга списка наступивших задач на шаги работы: ", err)
 		}
 		fmt.Println("смотрим персонажа ", personId, " задача ", taskId)
-		// Обрабатываем окончание работы - смотрим на повышенную сонливость
-		if somnolency > conf.MAX_SOMNOLENCY_FOR_STOP_WORK {
+		// Если шаг нулевой - закрываем его и начинаем честную работу
+		if step == 0 {
+			setStepDone(taskId, step)
+			createNewStep("work", step+1, taskId, finish_time)
+			setPersonState(personId, "work")
+			// Обрабатываем окончание работы - смотрим на повышенную сонливость
+		} else if somnolency > conf.MAX_SOMNOLENCY_FOR_STOP_WORK {
 			// Если не устали и при этом работали - продолжаем пахать
 			if fatifue < conf.MAX_FATIGUE_FOR_STOP_WORK && taskType == "work" {
-				setTaskDone(taskId)
-				newStep("work", step+1, taskId, skillId, personId, finish_time)
+				setStepDone(taskId, step)
+				createNewStep("work", step+1, taskId, finish_time)
 			} else {
 				// Если же устали или уже отдыхали на работе - всё, завершаем рабочий день и отдых, уходим заниматься домашними делами
+				setStepDone(taskId, step)
 				setTaskDone(taskId)
 				setPersonState(personId, "chores")
 			}
@@ -450,25 +412,25 @@ func step_task_job() {
 			if taskType == "work" {
 				// устали - отдыхаем
 				if fatifue > conf.MAX_FATIGUE_FOR_STOP_WORK {
-					setTaskDone(taskId)
+					setStepDone(taskId, step)
 					setPersonState(personId, "rest")
-					newStep("rest", step+1, taskId, skillId, personId, finish_time)
+					createNewStep("rest", step+1, taskId, finish_time)
 				} else {
 					// не устали - продолжаем работать
-					setTaskDone(taskId)
-					newStep("work", step+1, taskId, skillId, personId, finish_time)
+					setStepDone(taskId, step)
+					createNewStep("work", step+1, taskId, finish_time)
 				}
 			} else if taskType == "rest" {
 				// А вот если отдыхали и при этом
 				// нормально отдохнули - продолжаем работать
 				if fatifue < conf.MIN_FATIGUE_FOR_START_WORK {
-					setTaskDone(taskId)
+					setStepDone(taskId, step)
 					setPersonState(personId, "work")
-					newStep("work", step+1, taskId, skillId, personId, finish_time)
+					createNewStep("work", step+1, taskId, finish_time)
 				} else {
 					// не успели отдохнуть - продолжаем отдых
-					setTaskDone(taskId)
-					newStep("rest", step+1, taskId, skillId, personId, finish_time)
+					setStepDone(taskId, step)
+					createNewStep("rest", step+1, taskId, finish_time)
 				}
 			}
 		}
@@ -479,7 +441,7 @@ func createNewStep(stepType string, step, taskId, start_time int) {
 	//Получаем время завершения следующего шага
 	stepFinishTime := getNextStepData(taskId, step)
 	nowTime := lib.GetNowWorldTime()
-	//Создаём новую задачу на работу (на следующий шаг) и закрываем предыдущую
+	//Создаём новую задачу на работу
 	// TODO В будущем нужно будет смотреть на тип задачи и для рабочих добавить результаты
 	_, err := queries["createNewStep"].query.Exec(taskId, step, start_time, stepFinishTime, stepType, nowTime)
 	if err != nil {

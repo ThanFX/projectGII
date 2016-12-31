@@ -18,7 +18,7 @@ const (
 )
 
 type Characteristics struct {
-	State      int     `json: "state"`
+	State      string  `json: "state"`
 	Health     float32 `json: "health"`
 	Fatigue    float32 `json: "fatigue"`
 	Hunger     float32 `json: "hunger"`

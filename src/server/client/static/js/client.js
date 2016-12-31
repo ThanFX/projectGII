@@ -25,18 +25,8 @@ function setTime(time) {
 }
 
 function getPersonState(state) {
-	//console.log(state);
-	if (!states) {
-		console.log("States are undefined");
-		return false;
-	}
-	var curState = "", curStateValue = "";
-	for(var key in states) {
-		if(state == states[key]) {
-			curState = key;
-		}
-	}
-	switch(curState) {
+	let curStateValue = "Нужно добавить описание!";
+	switch(state) {
 		case "sleep":
 			curStateValue = "Спит";
 			break;
@@ -86,19 +76,19 @@ function createPerson(person) {
 			})
 			.add($('<div>', {
 				class: "hunger",
-				text: "Голод: " + person.PersonChr.Hunger.toFixed(2)
+				text: "Голод: " + person.PersonChr.Hunger
 			}))
 			.add($('<div>', {
 				class: "thirst",
-				text: "Жажда: " + person.PersonChr.Thirst.toFixed(2)
+				text: "Жажда: " + person.PersonChr.Thirst
 			}))
 			.add($('<div>', {
 				class: "fatigue",
-				text: "Усталость: " + person.PersonChr.Fatigue.toFixed(2)
+				text: "Усталость: " + person.PersonChr.Fatigue
 			}))
 			.add($('<div>', {
 				class: "somnolency",
-				text: "Сонливость: " + person.PersonChr.Somnolency.toFixed(2)
+				text: "Сонливость: " + person.PersonChr.Somnolency
 			}))
 		}))
 	});

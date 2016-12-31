@@ -35,9 +35,11 @@ window.onload = function () {
                         updatePersonChr(persons);
                     }
 					break;
+                /*    
 				case "states":
 					states = message.value;
 					break;
+                */
                 case "mapInfo":
                     mapInfo = message.value;
                     break;

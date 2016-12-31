@@ -103,14 +103,7 @@ func getPerson(send chan []byte) {
 }
 
 func getConfig(send chan []byte) {
-	var states string
-	err := db.QueryRow("SELECT value FROM config WHERE id = 'states';").Scan(&states)
-	if err != nil {
-		log.Fatal("Ошибка запроса конфига состояний персонажей в БД: ", err)
-	}
-	//fmt.Println(states)
 	mapInfo := "{\"startMapX\":" + strconv.Itoa(startMapX) + ",\"startMapY\":" + strconv.Itoa(startMapY) +
 		",\"mapWidth\":" + strconv.Itoa(mapWidth) + ",\"mapHeight\":" + strconv.Itoa(mapHeight) + "}"
-	send <- []byte("{\"key\":\"states\",\"value\":" + states + "}")
 	send <- []byte("{\"key\":\"mapInfo\",\"value\":" + mapInfo + "}")
 }
