@@ -371,11 +371,7 @@ func step_job() {
 
 	nowTime := lib.GetNowWorldTime()
 	//tasksList, err := queries["getFinishedSteps"].query.Query(nowTime)
-	tasksList, err := db.Query(`SELECT ts.task_id, ts.step, ts.type, t.person_id, ts.finish_time, chr.fatigue, chr.somnolency
-				FROM task_steps ts
-				JOIN tasks t on ts.task_id = t.id
-				JOIN person_health_characteristic chr ON chr.person_id = t.person_id
-				WHERE ts.is_done = FALSE AND ts.finish_time < $1;`, nowTime)
+	tasksList, err := db.Query(queries["getFinishedSteps"].text, nowTime)
 	//fmt.Println("!")
 	if err != nil {
 		log.Fatal("Ошибка получения наступивших задач на шаги работы: ", err)
