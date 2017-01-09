@@ -58,7 +58,15 @@ func initQueries() {
 	// $1 - nowTime
 	queries["getPersonWithoutWork"] = Query{
 		emptyStmp,
-		`SELECT person_id FROM tasks WHERE daytime > $1;`,
+		`SELECT p.id
+  		FROM
+    		(SELECT id
+    		FROM persons
+      		WHERE state = 'chores') p
+    	LEFT JOIN
+    		(SELECT person_id FROM tasks
+    		WHERE daytime > $1) t ON t.person_id = p.id
+		WHERE t.person_id IS NULL;`,
 		`Ошибка выполнения запроса получения списка персонажей без задач на сегодня: %s`}
 	// $1 - person_id
 	queries["getPreferSkill"] = Query{
@@ -313,7 +321,7 @@ func create_task() {
 	nowTime := lib.GetNowWorldTime()
 	startDayTime := lib.GetStartDayTime(nowTime)
 	// Получаем список персонажей, у которых нет работы
-	//fmt.Println("getPersonWithoutWork")
+	//fmt.Println("getPersonWithoutWork", startDayTime)
 	persons, err := queries["getPersonWithoutWork"].query.Query(nowTime)
 	//fmt.Println("!")
 	if err != nil {
@@ -376,7 +384,7 @@ func step_job() {
 	var taskType string
 
 	nowTime := lib.GetNowWorldTime()
-	//fmt.Println("getFinishedSteps")
+	fmt.Println("getFinishedSteps")
 	tasksList, err := queries["getFinishedSteps"].query.Query(nowTime)
 	//fmt.Println("!")
 	if err != nil {
@@ -396,6 +404,7 @@ func step_job() {
 			setStepDone(taskId, step)
 			createNewStep("work", step+1, taskId, finish_time)
 			setPersonState(personId, "work")
+			fmt.Printf("Персонаж %d начал работать", personId)
 			// Обрабатываем окончание работы - смотрим на повышенную сонливость
 		} else if somnolency > conf.MAX_SOMNOLENCY_FOR_STOP_WORK {
 			// Если не устали и при этом работали - продолжаем пахать
@@ -472,7 +481,7 @@ func setTaskDone(taskId int) {
 }
 
 func setPersonState(personId int, state string) {
-	//fmt.Println("setPersonState")
+	fmt.Println(queries["setPersonState"].query, state, personId)
 	_, err := queries["setPersonState"].query.Exec(state, personId)
 	//fmt.Println("!")
 	if err != nil {
