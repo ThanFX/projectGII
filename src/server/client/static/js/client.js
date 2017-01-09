@@ -72,23 +72,23 @@ function createPerson(person) {
 			class: "person-characteristics",
 			append: $('<div>', {
 				class: "state",
-				text: "Состояние: " + getPersonState(person.PersonChr.State)
+				text: "Состояние: " + getPersonState(person.State)
 			})
 			.add($('<div>', {
 				class: "hunger",
-				text: "Голод: " + person.PersonChr.Hunger
+				text: "Голод: " + person.Hunger
 			}))
 			.add($('<div>', {
 				class: "thirst",
-				text: "Жажда: " + person.PersonChr.Thirst
+				text: "Жажда: " + person.Thirst
 			}))
 			.add($('<div>', {
 				class: "fatigue",
-				text: "Усталость: " + person.PersonChr.Fatigue
+				text: "Усталость: " + person.Fatigue
 			}))
 			.add($('<div>', {
 				class: "somnolency",
-				text: "Сонливость: " + person.PersonChr.Somnolency
+				text: "Сонливость: " + person.Somnolency
 			}))
 		}))
 	});
@@ -120,15 +120,15 @@ function drawPersons(persons) {
 function updatePersonChr(persons) {
 	persons.forEach(function(person, i){
 		$('div[data-person-id='+person.PersonId+']').find('.state')
-		.text("Состояние: " + getPersonState(person.PersonChr.State));
+		.text("Состояние: " + getPersonState(person.State));
 		$('div[data-person-id='+person.PersonId+']').find('.hunger')
-		.text("Голод: " + person.PersonChr.Hunger);
+		.text("Голод: " + person.Hunger);
 		$('div[data-person-id='+person.PersonId+']').find('.thirst')
-		.text("Жажда: " + person.PersonChr.Thirst);
+		.text("Жажда: " + person.Thirst);
 		$('div[data-person-id='+person.PersonId+']').find('.fatigue')
-		.text("Усталость: " + person.PersonChr.Fatigue);
+		.text("Усталость: " + person.Fatigue);
 		$('div[data-person-id='+person.PersonId+']').find('.somnolency')
-		.text("Сонливость: " + person.PersonChr.Somnolency);
+		.text("Сонливость: " + person.Somnolency);
 	});
 }
 

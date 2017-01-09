@@ -18,7 +18,6 @@ const (
 )
 
 type Characteristics struct {
-	State      string  `json: "state"`
 	Health     float32 `json: "health"`
 	Fatigue    float32 `json: "fatigue"`
 	Hunger     float32 `json: "hunger"`
@@ -32,10 +31,15 @@ type PersonChunk struct {
 }
 
 type Person struct {
-	PersonId  int             `json: "personId"`
-	Name      string          `json: "name"`
-	Chunk     PersonChunk     `json: "chunk"`
-	PersonChr Characteristics `json: "characteristics"`
+	PersonId   int         `json: "personId"`
+	Name       string      `json: "name"`
+	Chunk      PersonChunk `json: "chunk"`
+	State      string      `json: "state"`
+	Health     float32     `json: "health"`
+	Fatigue    float32     `json: "fatigue"`
+	Hunger     float32     `json: "hunger"`
+	Thirst     float32     `json: "thirst"`
+	Somnolency float32     `json: "somnolency"`
 }
 
 var (

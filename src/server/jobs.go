@@ -37,7 +37,7 @@ type Query struct {
 
 var (
 	stateSpeeds objx.Map
-	queries     map[string]*Query
+	queries     map[string]Query
 )
 
 func init_check() {
@@ -54,55 +54,55 @@ func init_check() {
 
 func initQueries() {
 	var emptyStmp *sql.Stmt
-	queries = make(map[string]*Query)
+	queries = make(map[string]Query)
 	// $1 - nowTime
-	queries["getPersonWithoutWork"] = &Query{
+	queries["getPersonWithoutWork"] = Query{
 		emptyStmp,
 		`SELECT person_id FROM tasks WHERE daytime > $1;`,
 		`Ошибка выполнения запроса получения списка персонажей без задач на сегодня: %s`}
 	// $1 - person_id
-	queries["getPreferSkill"] = &Query{
+	queries["getPreferSkill"] = Query{
 		emptyStmp,
 		`SELECT skill_id FROM person_skills WHERE person_id = $1 ORDER BY worth DESC LIMIT 1;`,
 		`Ошибка получения наилучшей работы для персонажа %d: %s`}
 	//
-	queries["createTask"] = &Query{
+	queries["createTask"] = Query{
 		emptyStmp,
 		`INSERT INTO tasks(person_id, skill_id, daytime, steps, result, create_time) VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id`,
 		`Ошибка создания задачи на работу для персонажа %d в %d: $s`}
 	// $1 - state, $2 - personId
-	queries["setPersonState"] = &Query{
+	queries["setPersonState"] = Query{
 		emptyStmp,
-		`UPDATE person_health_characteristic SET state = $1 WHERE person_id = $2;`,
+		`UPDATE persons SET state = $1 WHERE id = $2;`,
 		`Ошибка установки состояния \"%s\" для персонажа %d: %s`}
 	//$1 - taskId, $2 - step
-	queries["setStepDone"] = &Query{
+	queries["setStepDone"] = Query{
 		emptyStmp,
 		`UPDATE task_steps SET is_done = TRUE WHERE task_id = $1 AND step = $2;`,
 		`Ошибка закрытия шага %d для задачи %d: %s`}
 	//$1 - taskId, $2 - step
-	queries["getStepData"] = &Query{
+	queries["getStepData"] = Query{
 		emptyStmp,
 		`SELECT (steps->$2)->'finish_time' from tasks WHERE id = $1;`,
 		`Ошибка получения данных шага %d задачи %d: %s`}
 	//$1 - taskId
-	queries["setTaskDone"] = &Query{
+	queries["setTaskDone"] = Query{
 		emptyStmp,
 		`UPDATE tasks SET is_done = TRUE WHERE id = $1;`,
 		`Ошибка закрытия задачи %d: %s`}
 	//
-	queries["createNewStep"] = &Query{
+	queries["createNewStep"] = Query{
 		emptyStmp,
 		`INSERT INTO task_steps(task_id, step, start_time, finish_time, type, create_time) VALUES ($1, $2, $3, $4, $5, $6);`,
 		`Ошибка создания шага %d задачи %d: %s`}
 	//
-	queries["getFinishedSteps"] = &Query{
+	queries["getFinishedSteps"] = Query{
 		emptyStmp,
-		`SELECT ts.task_id, ts.step, ts.type, t.person_id, ts.finish_time, chr.fatigue, chr.somnolency
+		`SELECT ts.task_id, ts.step, ts.type, t.person_id, ts.finish_time, p.fatigue, p.somnolency
 				FROM task_steps ts
 				JOIN tasks t on ts.task_id = t.id
-				JOIN person_health_characteristic chr ON chr.person_id = t.person_id
+				JOIN persons p ON p.id = t.person_id
 				WHERE ts.is_done = FALSE AND ts.finish_time < $1;`,
 		`Ошибка получения завершившихся шагов: %s`}
 }
@@ -116,7 +116,9 @@ func prepareQueries() {
 			log.Fatal("Ошибка подготовки запроса ", key, ": ", err)
 		}
 		q.query = prepareQuery
-		queries[key] = &q
+		q.text = queries[key].text
+		q.queryErrorText = queries[key].queryErrorText
+		queries[key] = q
 	}
 }
 
@@ -181,7 +183,7 @@ func state_job() {
 
 	if cH < 6 || cH >= 20 {
 		_, err := db.Exec(`
-		UPDATE person_health_characteristic SET state = $1 WHERE
+		UPDATE persons SET state = $1 WHERE
 			somnolency > 40.0;
 		`, "sleep")
 		if err != nil {
@@ -190,7 +192,7 @@ func state_job() {
 	}
 	if cH >= 6 && cH < 20 {
 		_, err := db.Exec(`
-		UPDATE person_health_characteristic SET state = $1 WHERE
+		UPDATE persons SET state = $1 WHERE
 			somnolency <= 6.0;
 		`, "chores")
 		if err != nil {
@@ -211,7 +213,7 @@ func ed_job() {
 	//fmt.Println("Едим и пьём в ", lib.GetWCTString(cTime))
 
 	_, err := db.Exec(`
-		UPDATE person_health_characteristic SET thirst = $1 WHERE
+		UPDATE persons SET thirst = $1 WHERE
 			thirst >= 6.0 AND state != $2;
 		`, 0.0, "sleep")
 	if err != nil {
@@ -219,7 +221,7 @@ func ed_job() {
 	}
 
 	_, err = db.Exec(`
-		UPDATE person_health_characteristic SET thirst = $1, hunger = $2 WHERE
+		UPDATE persons SET thirst = $1, hunger = $2 WHERE
 			hunger >= 3.0 AND state != $3;
 		`, 0.0, 0.0, "sleep")
 	if err != nil {
@@ -236,7 +238,7 @@ func hts_job() {
 	//fmt.Println("Проверка работы началась в ", lib.GetWCTString(cTime))
 
 	_, err := db.Exec(`
-		UPDATE person_health_characteristic SET
+		UPDATE persons SET
 			hunger = hunger + ($1 * (($5 - last_htfs_update) / 3600.0)),
 			thirst = thirst + ($2 * (($5 - last_htfs_update) / 3600.0)),
 			fatigue = GREATEST(0.0, fatigue + ($3 * (($5 - last_htfs_update) / 3600.0))),
@@ -253,7 +255,7 @@ func hts_job() {
 		log.Fatal("Ошибка обновления характерстик спящих персонажей: ", err)
 	}
 	_, err = db.Exec(`
-		UPDATE person_health_characteristic SET
+		UPDATE persons SET
 			hunger = hunger + ($1 * (($5 - last_htfs_update) / 3600.0)),
 			thirst = thirst + ($2 * (($5 - last_htfs_update) / 3600.0)),
 			fatigue = GREATEST(0.0, fatigue + ($3 * (($5 - last_htfs_update) / 3600.0))),
@@ -270,7 +272,7 @@ func hts_job() {
 		log.Fatal("Ошибка обновления характерстик персонажей, занимающихся домашними делами: ", err)
 	}
 	_, err = db.Exec(`
-		UPDATE person_health_characteristic SET
+		UPDATE persons SET
 			hunger = hunger + ($1 * (($5 - last_htfs_update) / 3600.0)),
 			thirst = thirst + ($2 * (($5 - last_htfs_update) / 3600.0)),
 			fatigue = GREATEST(0.0, fatigue + ($3 * (($5 - last_htfs_update) / 3600.0))),
@@ -287,7 +289,7 @@ func hts_job() {
 		log.Fatal("Ошибка обновления характерстик работающих персонажей: ", err)
 	}
 	_, err = db.Exec(`
-		UPDATE person_health_characteristic SET
+		UPDATE persons SET
 			hunger = hunger + ($1 * (($5 - last_htfs_update) / 3600.0)),
 			thirst = thirst + ($2 * (($5 - last_htfs_update) / 3600.0)),
 			fatigue = GREATEST(0.0, fatigue + ($3 * (($5 - last_htfs_update) / 3600.0))),
@@ -311,10 +313,11 @@ func create_task() {
 	nowTime := lib.GetNowWorldTime()
 	startDayTime := lib.GetStartDayTime(nowTime)
 	// Получаем список персонажей, у которых нет работы
-
+	//fmt.Println("getPersonWithoutWork")
 	persons, err := queries["getPersonWithoutWork"].query.Query(nowTime)
+	//fmt.Println("!")
 	if err != nil {
-		log.Fatal(queries["getPersonWithoutWork"].queryErrorText, err)
+		log.Fatalf(queries["getPersonWithoutWork"].queryErrorText, err)
 	}
 	defer persons.Close()
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -328,7 +331,9 @@ func create_task() {
 		preferSkillId := getPreferPersonSkill(personId)
 		nowTime := lib.GetNowWorldTime()
 		steps := getTaskSteps(nowTime)
+		//fmt.Println("createTask")
 		err = queries["createTask"].query.QueryRow(personId, preferSkillId, startDayTime, steps, "{}", nowTime).Scan(&taskId)
+		//fmt.Println("!")
 		if err != nil {
 			log.Fatalf(queries["createTask"].queryErrorText, personId, startDayTime, err)
 		}
@@ -357,6 +362,7 @@ func getTaskSteps(nowTime int64) string {
 
 func getPreferPersonSkill(personId int) int {
 	var skillId int
+	//fmt.Println("getPreferSkill")
 	err := queries["getPreferSkill"].query.QueryRow(personId).Scan(&skillId)
 	if err != nil {
 		log.Fatalf(queries["getPreferSkill"].queryErrorText, personId, err)
@@ -370,8 +376,8 @@ func step_job() {
 	var taskType string
 
 	nowTime := lib.GetNowWorldTime()
-	//tasksList, err := queries["getFinishedSteps"].query.Query(nowTime)
-	tasksList, err := db.Query(queries["getFinishedSteps"].text, nowTime)
+	//fmt.Println("getFinishedSteps")
+	tasksList, err := queries["getFinishedSteps"].query.Query(nowTime)
 	//fmt.Println("!")
 	if err != nil {
 		log.Fatal("Ошибка получения наступивших задач на шаги работы: ", err)
@@ -439,28 +445,36 @@ func createNewStep(stepType string, step, taskId, start_time int) {
 	nowTime := lib.GetNowWorldTime()
 	//Создаём новую задачу на работу
 	// TODO В будущем нужно будет смотреть на тип задачи и для рабочих добавить результаты
+	//fmt.Println("createNewStep")
 	_, err := queries["createNewStep"].query.Exec(taskId, step, start_time, stepFinishTime, stepType, nowTime)
+	//fmt.Println("!")
 	if err != nil {
 		log.Fatal(queries["createNewStep"].queryErrorText, step, taskId, err)
 	}
 }
 
 func setStepDone(taskId, step int) {
+	//fmt.Println("setStepDone")
 	_, err := queries["setStepDone"].query.Exec(taskId, step)
+	//fmt.Println("!")
 	if err != nil {
 		log.Fatal(queries["setStepDone"].queryErrorText, taskId, step, err)
 	}
 }
 
 func setTaskDone(taskId int) {
+	//fmt.Println("setTaskDone")
 	_, err := queries["setTaskDone"].query.Exec(taskId)
+	//fmt.Println("!")
 	if err != nil {
 		log.Fatal(queries["setTaskDone"].queryErrorText, taskId, err)
 	}
 }
 
 func setPersonState(personId int, state string) {
+	//fmt.Println("setPersonState")
 	_, err := queries["setPersonState"].query.Exec(state, personId)
+	//fmt.Println("!")
 	if err != nil {
 		log.Fatalf(queries["setPersonState"].queryErrorText, state, personId, err)
 	}
@@ -470,7 +484,9 @@ func getNextStepData(taskId, step int) int64 {
 	var stepFinishTime sql.NullInt64
 	nowTime := lib.GetNowWorldTime()
 	for {
+		//fmt.Println("getStepData")
 		err := queries["getStepData"].query.QueryRow(taskId, step).Scan(&stepFinishTime)
+		//fmt.Println("!")
 		if err != nil {
 			log.Fatalf(queries["getStepData"].queryErrorText, step, taskId, err)
 		}
