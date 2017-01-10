@@ -10,6 +10,8 @@ import (
 const (
 	ADDR                             string  = ":8080"
 	MAX_SOMNOLENCY_FOR_STOP_WORK     float32 = 30.0
+	MAX_SOMNOLENCY_FOR_SLEEP         float32 = 40.0
+	MIN_SOMNOLENCY_FOR_WAKEUP        float32 = 6.0
 	MAX_FATIGUE_FOR_STOP_WORK        float32 = 60.0
 	MIN_FATIGUE_FOR_START_WORK       float32 = 20.0
 	MAX_MORNING_INTERVAL_BEFORE_WORK int64   = 7200
