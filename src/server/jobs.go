@@ -55,7 +55,7 @@ func init_check() {
 func initQueries() {
 	var emptyStmp *sql.Stmt
 	queries = make(map[string]Query)
-	// $1 - nowTime
+	// $1 - startDayTime, $2 - nowTime
 	queries["getPersonWithoutWork"] = Query{
 		emptyStmp,
 		`SELECT p.id
@@ -65,7 +65,7 @@ func initQueries() {
       		WHERE state = 'chores') p
     	LEFT JOIN
     		(SELECT person_id FROM tasks
-    		WHERE daytime > $1) t ON t.person_id = p.id
+    		WHERE create_time > $1 AND create_time < $2) t ON t.person_id = p.id
 		WHERE t.person_id IS NULL;`,
 		`Ошибка выполнения запроса получения списка персонажей без задач на сегодня: %s`}
 	// $1 - person_id
@@ -76,7 +76,7 @@ func initQueries() {
 	//
 	queries["createTask"] = Query{
 		emptyStmp,
-		`INSERT INTO tasks(person_id, skill_id, daytime, steps, result, create_time) VALUES ($1, $2, $3, $4, $5, $6)
+		`INSERT INTO tasks(person_id, skill_id, steps, result, create_time) VALUES ($1, $2, $3, $4, $5)
 		RETURNING id`,
 		`Ошибка создания задачи на работу для персонажа %d в %d: $s`}
 	// $1 - state, $2 - personId
@@ -157,22 +157,22 @@ func create_check(world_time_speed int) {
 
 	state_cron := cron.New()
 	state_cron.AddFunc(state_period, state_job)
-	go state_job()
+	state_job()
 	state_cron.Start()
 
 	hts_cron := cron.New()
 	hts_cron.AddFunc(hts_period, hts_job)
-	go hts_job()
+	hts_job()
 	hts_cron.Start()
 
 	ed_cron := cron.New()
 	ed_cron.AddFunc(ed_period, ed_job)
-	go ed_job()
+	ed_job()
 	ed_cron.Start()
 
 	task_cron := cron.New()
 	task_cron.AddFunc(work_period, step_job)
-	go step_job()
+	step_job()
 	task_cron.Start()
 }
 
@@ -199,15 +199,22 @@ func state_job() {
 		}
 	}
 	if cH >= 6 && cH < 20 {
-		_, err := db.Exec(`
+		upd, err := db.Exec(`
 		UPDATE persons SET state = $1 WHERE
 			somnolency <= 6.0;
 		`, "chores")
 		if err != nil {
 			log.Fatal("Ошибка пробуждения персонажей: ", err)
 		}
-		// И сразу после пробуждения начали создавать задачи на сегодняшнюю работу
-		go create_task()
+		countPerson, err := upd.RowsAffected()
+		if err != nil {
+			log.Fatal("Ошибка получения количества проснувшихся персонажей")
+		}
+		// Если хоть кто-то проснулся, есть смысл запустить создание работ для них
+		if countPerson > 0 {
+			log.Printf("Проснулось %d персонажей\n", countPerson)
+			create_task()
+		}
 	}
 
 }
@@ -220,18 +227,15 @@ func ed_job() {
 	//cTime := lib.GetWorldCalendarTime(lib.GetNowWorldTime())
 	//fmt.Println("Едим и пьём в ", lib.GetWCTString(cTime))
 
-	_, err := db.Exec(`
-		UPDATE persons SET thirst = $1 WHERE
-			thirst >= 6.0 AND state != $2;
-		`, 0.0, "sleep")
+	_, err := db.Exec(`UPDATE persons SET thirst = $1 WHERE thirst >= 6.0 AND state != $2;`, 0.0, "sleep")
 	if err != nil {
 		log.Fatal("Ошибка утоления жажды: ", err)
 	}
 
 	_, err = db.Exec(`
 		UPDATE persons SET thirst = $1, hunger = $2 WHERE
-			hunger >= 3.0 AND state != $3;
-		`, 0.0, 0.0, "sleep")
+			hunger >= 3.0 AND state in ($3, $4);
+		`, 0.0, 0.0, "chores", "rest")
 	if err != nil {
 		log.Fatal("Ошибка утоления голода: ", err)
 	}
@@ -322,7 +326,7 @@ func create_task() {
 	startDayTime := lib.GetStartDayTime(nowTime)
 	// Получаем список персонажей, у которых нет работы
 	//fmt.Println("getPersonWithoutWork", startDayTime)
-	persons, err := queries["getPersonWithoutWork"].query.Query(nowTime)
+	persons, err := queries["getPersonWithoutWork"].query.Query(startDayTime, nowTime)
 	//fmt.Println("!")
 	if err != nil {
 		log.Fatalf(queries["getPersonWithoutWork"].queryErrorText, err)
@@ -335,12 +339,12 @@ func create_task() {
 		if err != nil {
 			log.Fatal("Ошибка парсинга списка персонажей: ", err)
 		}
-		fmt.Println("Получаем список персонажей - ", personId)
+		//fmt.Println("Получаем список персонажей - ", personId)
 		preferSkillId := getPreferPersonSkill(personId)
 		nowTime := lib.GetNowWorldTime()
 		steps := getTaskSteps(nowTime)
 		//fmt.Println("createTask")
-		err = queries["createTask"].query.QueryRow(personId, preferSkillId, startDayTime, steps, "{}", nowTime).Scan(&taskId)
+		err = queries["createTask"].query.QueryRow(personId, preferSkillId, steps, "{}", nowTime).Scan(&taskId)
 		//fmt.Println("!")
 		if err != nil {
 			log.Fatalf(queries["createTask"].queryErrorText, personId, startDayTime, err)
@@ -384,7 +388,7 @@ func step_job() {
 	var taskType string
 
 	nowTime := lib.GetNowWorldTime()
-	fmt.Println("getFinishedSteps")
+	//fmt.Println("getFinishedSteps")
 	tasksList, err := queries["getFinishedSteps"].query.Query(nowTime)
 	//fmt.Println("!")
 	if err != nil {
@@ -398,13 +402,13 @@ func step_job() {
 		if err != nil {
 			log.Fatal("Ошибка парсинга списка наступивших задач на шаги работы: ", err)
 		}
-		fmt.Println("смотрим персонажа ", personId, " задача ", taskId)
+		//fmt.Println("смотрим персонажа ", personId, " задача ", taskId)
 		// Если шаг нулевой - закрываем его и начинаем честную работу
 		if step == 0 {
 			setStepDone(taskId, step)
 			createNewStep("work", step+1, taskId, finish_time)
 			setPersonState(personId, "work")
-			fmt.Printf("Персонаж %d начал работать", personId)
+			log.Printf("%d | Персонаж %d начал работать, сонливость - %.2f\n", nowTime, personId, somnolency)
 			// Обрабатываем окончание работы - смотрим на повышенную сонливость
 		} else if somnolency > conf.MAX_SOMNOLENCY_FOR_STOP_WORK {
 			// Если не устали и при этом работали - продолжаем пахать
@@ -416,6 +420,7 @@ func step_job() {
 				setStepDone(taskId, step)
 				setTaskDone(taskId)
 				setPersonState(personId, "chores")
+				log.Printf("%d | Персонаж %d закончил работать, сонливость - %.2f\n", nowTime, personId, somnolency)
 			}
 		} else {
 			// А вот если спать ещё не хочется, смотрим на то, чем занимались
@@ -426,6 +431,7 @@ func step_job() {
 					setStepDone(taskId, step)
 					setPersonState(personId, "rest")
 					createNewStep("rest", step+1, taskId, finish_time)
+					log.Printf("%d | Персонаж %d устал и решил отдохнуть, усталость - %.2f\n", nowTime, personId, fatifue)
 				} else {
 					// не устали - продолжаем работать
 					setStepDone(taskId, step)
@@ -438,6 +444,7 @@ func step_job() {
 					setStepDone(taskId, step)
 					setPersonState(personId, "work")
 					createNewStep("work", step+1, taskId, finish_time)
+					log.Printf("%d | Персонаж %d отдохнул и продолжил работу, усталость - %.2f\n", nowTime, personId, fatifue)
 				} else {
 					// не успели отдохнуть - продолжаем отдых
 					setStepDone(taskId, step)
@@ -481,7 +488,7 @@ func setTaskDone(taskId int) {
 }
 
 func setPersonState(personId int, state string) {
-	fmt.Println(queries["setPersonState"].query, state, personId)
+	//fmt.Println(queries["setPersonState"].query, state, personId)
 	_, err := queries["setPersonState"].query.Exec(state, personId)
 	//fmt.Println("!")
 	if err != nil {
