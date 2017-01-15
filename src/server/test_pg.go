@@ -23,6 +23,12 @@ CREATE TABLE test_char
 `
 */
 
+func createWorkResult() {
+	nowTime := lib.GetNowWorldTime()
+	steps := getTaskSteps(nowTime)
+	fmt.Println(steps)
+}
+
 func test_insert() {
 	const (
 		INSERT_QUERY = "INSERT INTO test_char (last_htfs_update) VALUES ($1);"
