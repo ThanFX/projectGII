@@ -24,8 +24,14 @@ CREATE TABLE test_char
 */
 
 func createWorkResult() {
+	prepareQueries()
+	var personId int = 1
+
+	preferSkillId := getPreferPersonSkill(personId)
+	skill := getSkillInfo(preferSkillId)
+
 	nowTime := lib.GetNowWorldTime()
-	steps := getTaskSteps(nowTime)
+	steps := getTaskSteps(nowTime, skill.Results.ItemTemplateId)
 	fmt.Println(steps)
 }
 

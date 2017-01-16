@@ -86,12 +86,16 @@ func initQueries() {
 			last_htfs_update = $5
 		WHERE state = $6;`,
 		`Ошибка глобального HTFS-обновления персонажей в состоянии %s: %s`}
-	// $1 - skillId
+	// $1 - skill_id
 	queries["getSkillInfo"] = Query{
 		emptyStmp,
-		`SELECT tools, results FROM skills WHERE id = $1;`,
+		`SELECT tools, results->'id', results->'type' FROM skills WHERE id = $1;`,
 		`Ошибка получения навыка %d: %s`}
-
+	// $1 - parent_id
+	queries["getFoods"] = Query{
+		emptyStmp,
+		`SELECT id FROM item_template_food WHERE parent_id = $1;`,
+		`Ошибка получения шаблонов продуктов для родителя %d: %s`}
 }
 
 func prepareQueries() {

@@ -15,6 +15,7 @@ import (
 // Создаём задачи (и массив шагов выполнения для задач) на старт работ для персонажей
 func create_task() {
 	var personId, taskId int
+	var skill conf.Skill
 	nowTime := lib.GetNowWorldTime()
 	startDayTime := lib.GetStartDayTime(nowTime)
 	// Получаем список персонажей, у которых нет работы
@@ -35,32 +36,47 @@ func create_task() {
 		//fmt.Println("Получаем список персонажей - ", personId)
 		preferSkillId := getPreferPersonSkill(personId)
 		nowTime := lib.GetNowWorldTime()
-		skill := getSkillInfo(preferSkillId)
-		steps := getTaskSteps(nowTime)
+		skill = getSkillInfo(preferSkillId)
+		//fmt.Println(skill.Results.ItemTemplateId)
+		steps := getTaskSteps(nowTime, skill.Results.ItemTemplateId)
+		//fmt.Println(steps)
 		//fmt.Println("createTask")
 		err = queries["createTask"].query.QueryRow(personId, preferSkillId, steps, "{}", nowTime).Scan(&taskId)
 		//fmt.Println("!")
 		if err != nil {
 			log.Fatalf(queries["createTask"].queryErrorText, personId, startDayTime, err)
 		}
-		createNewStep("wait", 0, taskId, int(nowTime))
+		//createNewStep("wait", 0, taskId, int(nowTime))
 		fmt.Println("Создали работу для ", personId)
 	}
 }
 
-func getSkillInfo(preferSkillId int) {
-
+func getSkillInfo(preferSkillId int) conf.Skill {
+	var skill conf.Skill
+	//fmt.Println("getSkillInfo")
+	err := queries["getSkillInfo"].query.QueryRow(preferSkillId).
+		Scan(&skill.Tools, &skill.Results.ItemTemplateId, &skill.Results.Type)
+	if err != nil {
+		log.Fatalf(queries["getSkillInfo"].queryErrorText, preferSkillId, err)
+	}
+	return skill
 }
 
-func getTaskSteps(nowTime int64) string {
+func getTaskSteps(nowTime int64, itemParentId int) string {
 	// Первый шаг через некоторый промежуток после пробуждения
 	stepTime := rand.Int63n(conf.MAX_MORNING_INTERVAL_BEFORE_WORK) + conf.MIN_STEP_DURATING + nowTime
 	steps := "{"
 	step := 0
+	// Получаем массив айдишников результатов
+	items := getFoods(itemParentId)
 	// Создаём массив шагов, до конца текущих суток, нулевой шаг - ошидание работы с момента пробуждения,
 	// после него начинается реальная работа
 	for stepTime < (nowTime + 24*3600) {
 		steps += "\"" + strconv.Itoa(step) + "\":{\"finish_time\":" + strconv.FormatInt(stepTime, 10)
+		// Запрашиваем возможный результат работы для данного шага
+		res, itemNum, quantity := getStepFoodResult(len(items))
+		steps += ",\"is_res\":" + strconv.FormatBool(res) + ",\"item_id\":" + strconv.Itoa(items[itemNum]) +
+			",\"quantity\":" + strconv.Itoa(quantity)
 		steps += "},"
 		step++
 		stepTime += rand.Int63n(conf.MAX_STEP_DURATING-conf.MIN_STEP_DURATING) + conf.MIN_STEP_DURATING
@@ -70,9 +86,41 @@ func getTaskSteps(nowTime int64) string {
 	return steps
 }
 
+func getStepFoodResult(maxItems int) (bool, int, int) {
+	var itemNum, quantity int
+	res := false
+	resultChance := rand.Intn(100)
+	//fmt.Print("Шанс результата - ", resultChance, " | ")
+	if resultChance >= 20 {
+		res = true
+		itemNum = rand.Intn(maxItems)
+		quantity = rand.Intn(4) + 1
+	}
+	return res, itemNum, quantity
+}
+
+func getFoods(foodParentId int) []int {
+	var food int
+	var foods []int
+
+	results, err := queries["getFoods"].query.Query(foodParentId)
+	if err != nil {
+		log.Fatalf(queries["getFoods"].queryErrorText, foodParentId, err)
+	}
+	defer results.Close()
+	for results.Next() {
+		err = results.Scan(&food)
+		if err != nil {
+			log.Fatalf("Ошибка парсинга шаблона продукта: %s", err)
+		}
+		foods = append(foods, food)
+	}
+	return foods
+}
+
 func getPreferPersonSkill(personId int) int {
 	var skillId int
-	//fmt.Println("getPreferSkill")
+	//fmt.Println("getPreferSkill)
 	err := queries["getPreferSkill"].query.QueryRow(personId).Scan(&skillId)
 	if err != nil {
 		log.Fatalf(queries["getPreferSkill"].queryErrorText, personId, err)

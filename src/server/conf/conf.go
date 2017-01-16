@@ -45,11 +45,22 @@ type Person struct {
 }
 
 type Skill struct {
-	Tools int[] `json: "tools"`
+	Tools   string `json: "tools"`
 	Results struct {
-		Type string `json: "type"`
-		ItemTemplateId int `json: id`
+		Type           string `json: "type"`
+		ItemTemplateId int    `json: id`
 	}
+}
+
+type FoodTemplate struct {
+	Id         int    `json: "id"`
+	Name       string `json: "name"`
+	IsPiece    bool   `json: "is_piece"`
+	IsLiquid   bool   `json: "is_liquid"`
+	BaseWeight int    `json: "base_weight"`
+	FoodValue  int    `json: "food_value"`
+	Taste      int    `json: "taste"`
+	ExpiredIn  int    `json: "expired_in"`
 }
 
 var (
