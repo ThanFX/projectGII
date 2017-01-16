@@ -44,6 +44,14 @@ type Person struct {
 	Somnolency float32     `json: "somnolency"`
 }
 
+type Skill struct {
+	Tools int[] `json: "tools"`
+	Results struct {
+		Type string `json: "type"`
+		ItemTemplateId int `json: id`
+	}
+}
+
 var (
 	Db        *sql.DB
 	Db_client *sql.DB

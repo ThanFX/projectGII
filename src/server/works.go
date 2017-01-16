@@ -35,6 +35,7 @@ func create_task() {
 		//fmt.Println("Получаем список персонажей - ", personId)
 		preferSkillId := getPreferPersonSkill(personId)
 		nowTime := lib.GetNowWorldTime()
+		skill := getSkillInfo(preferSkillId)
 		steps := getTaskSteps(nowTime)
 		//fmt.Println("createTask")
 		err = queries["createTask"].query.QueryRow(personId, preferSkillId, steps, "{}", nowTime).Scan(&taskId)
@@ -45,6 +46,10 @@ func create_task() {
 		createNewStep("wait", 0, taskId, int(nowTime))
 		fmt.Println("Создали работу для ", personId)
 	}
+}
+
+func getSkillInfo(preferSkillId int) {
+
 }
 
 func getTaskSteps(nowTime int64) string {

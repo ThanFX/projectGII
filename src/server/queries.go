@@ -86,6 +86,11 @@ func initQueries() {
 			last_htfs_update = $5
 		WHERE state = $6;`,
 		`Ошибка глобального HTFS-обновления персонажей в состоянии %s: %s`}
+	// $1 - skillId
+	queries["getSkillInfo"] = Query{
+		emptyStmp,
+		`SELECT tools, results FROM skills WHERE id = $1;`,
+		`Ошибка получения навыка %d: %s`}
 
 }
 
