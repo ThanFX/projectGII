@@ -94,7 +94,7 @@ func initQueries() {
 	// $1 - parent_id
 	queries["getFoods"] = Query{
 		emptyStmp,
-		`SELECT id FROM item_template_food WHERE parent_id = $1;`,
+		`SELECT id FROM item_templates WHERE parent_id = $1;`,
 		`Ошибка получения шаблонов продуктов для родителя %d: %s`}
 }
 
