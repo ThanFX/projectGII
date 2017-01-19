@@ -53,7 +53,7 @@ func initQueries() {
 		`UPDATE task_steps SET is_done = TRUE WHERE task_id = $1 AND step = $2;`,
 		`Ошибка закрытия шага %d для задачи %d: %s`}
 	//$1 - taskId, $2 - step
-	queries["getStepData"] = Query{
+	queries["getStepFinishTime"] = Query{
 		emptyStmp,
 		`SELECT (steps->$2)->'finish_time' from tasks WHERE id = $1;`,
 		`Ошибка получения данных шага %d задачи %d: %s`}
@@ -70,7 +70,7 @@ func initQueries() {
 	//
 	queries["getFinishedSteps"] = Query{
 		emptyStmp,
-		`SELECT ts.task_id, ts.step, ts.type, t.person_id, ts.finish_time, p.fatigue, p.somnolency
+		`SELECT ts.task_id, ts.step, ts.type, t.person_id, ts.finish_time, p.fatigue, p.somnolency, p.storadge_id
 				FROM task_steps ts
 				JOIN tasks t on ts.task_id = t.id
 				JOIN persons p ON p.id = t.person_id
@@ -92,10 +92,26 @@ func initQueries() {
 		`SELECT tools, results->'id', results->'type' FROM skills WHERE id = $1;`,
 		`Ошибка получения навыка %d: %s`}
 	// $1 - parent_id
-	queries["getFoods"] = Query{
+	queries["getItemsByParent"] = Query{
 		emptyStmp,
 		`SELECT id FROM item_templates WHERE parent_id = $1;`,
-		`Ошибка получения шаблонов продуктов для родителя %d: %s`}
+		`Ошибка получения шаблонов предметов для родителя %d: %s`}
+	// $1 - item_id
+	queries["getItemBaseInfo"] = Query{
+		emptyStmp,
+		`SELECT name, base_weight, expired_in FROM item_templates WHERE id = $1;`,
+		`Ошибка получения базовой информации для предмета %d: %s`}
+	//$1 - taskId, $2 - step
+	queries["setStepResults"] = Query{
+		emptyStmp,
+		`SELECT (steps->$2)->'is_res', (steps->$2)->'item_id', (steps->$2)->'quantity' from tasks WHERE id = $1;`,
+		`Ошибка получения результатов шага %d задачи %d: %s`}
+	//
+	queries["setPersonalItem"] = Query{
+		emptyStmp,
+		`INSERT INTO person_items(person_id, item_template_id, quantity, weight, expired_at, create_time)
+    		VALUES ($1, $2, $3, $4, $5, $6);`,
+		`Ошибка создания предмета %d для персонажа %d в шаге %d задачи %d: %s`}
 }
 
 func prepareQueries() {

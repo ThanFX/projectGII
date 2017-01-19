@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"server/client"
 	"server/conf"
 	"server/lib"
 	"strconv"
@@ -51,7 +52,7 @@ func setWorldTime() {
 func main() {
 	defer db.Close()
 	lib.GetCalendar()
-	//go client.ClientStart()
-	//setWorldTime()
-	createWorkResult()
+	go client.ClientStart()
+	setWorldTime()
+	//createWorkResult()
 }

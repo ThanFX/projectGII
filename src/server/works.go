@@ -46,7 +46,7 @@ func create_task() {
 		if err != nil {
 			log.Fatalf(queries["createTask"].queryErrorText, personId, startDayTime, err)
 		}
-		//createNewStep("wait", 0, taskId, int(nowTime))
+		createNewStep("wait", 0, taskId, int(nowTime))
 		fmt.Println("Создали работу для ", personId)
 	}
 }
@@ -68,13 +68,13 @@ func getTaskSteps(nowTime int64, itemParentId int) string {
 	steps := "{"
 	step := 0
 	// Получаем массив айдишников результатов
-	items := getFoods(itemParentId)
+	items := getItems(itemParentId)
 	// Создаём массив шагов, до конца текущих суток, нулевой шаг - ошидание работы с момента пробуждения,
 	// после него начинается реальная работа
 	for stepTime < (nowTime + 24*3600) {
 		steps += "\"" + strconv.Itoa(step) + "\":{\"finish_time\":" + strconv.FormatInt(stepTime, 10)
 		// Запрашиваем возможный результат работы для данного шага
-		res, itemNum, quantity := getStepFoodResult(len(items))
+		res, itemNum, quantity := getStepResults(len(items))
 		steps += ",\"is_res\":" + strconv.FormatBool(res) + ",\"item_id\":" + strconv.Itoa(items[itemNum]) +
 			",\"quantity\":" + strconv.Itoa(quantity)
 		steps += "},"
@@ -86,7 +86,7 @@ func getTaskSteps(nowTime int64, itemParentId int) string {
 	return steps
 }
 
-func getStepFoodResult(maxItems int) (bool, int, int) {
+func getStepResults(maxItems int) (bool, int, int) {
 	var itemNum, quantity int
 	res := false
 	resultChance := rand.Intn(100)
@@ -99,23 +99,23 @@ func getStepFoodResult(maxItems int) (bool, int, int) {
 	return res, itemNum, quantity
 }
 
-func getFoods(foodParentId int) []int {
-	var food int
-	var foods []int
+func getItems(itemParentId int) []int {
+	var item int
+	var items []int
 
-	results, err := queries["getFoods"].query.Query(foodParentId)
+	results, err := queries["getItemsByParent"].query.Query(itemParentId)
 	if err != nil {
-		log.Fatalf(queries["getFoods"].queryErrorText, foodParentId, err)
+		log.Fatalf(queries["getItemsByParent"].queryErrorText, itemParentId, err)
 	}
 	defer results.Close()
 	for results.Next() {
-		err = results.Scan(&food)
+		err = results.Scan(&item)
 		if err != nil {
-			log.Fatalf("Ошибка парсинга шаблона продукта: %s", err)
+			log.Fatalf("Ошибка парсинга шаблона предмета: %s", err)
 		}
-		foods = append(foods, food)
+		items = append(items, item)
 	}
-	return foods
+	return items
 }
 
 func getPreferPersonSkill(personId int) int {
@@ -129,7 +129,7 @@ func getPreferPersonSkill(personId int) int {
 }
 
 func step_job() {
-	var taskId, personId, step, finish_time int
+	var taskId, personId, storadgeId, step, finish_time int
 	var fatifue, somnolency float32
 	var taskType string
 
@@ -144,14 +144,14 @@ func step_job() {
 
 	for tasksList.Next() {
 		// ts.task_id, ts.step, ts.type, t.person_id, ts.finish_time, chr.fatigue, chr.somnolency
-		err = tasksList.Scan(&taskId, &step, &taskType, &personId, &finish_time, &fatifue, &somnolency)
+		err = tasksList.Scan(&taskId, &step, &taskType, &personId, &finish_time, &fatifue, &somnolency, &storadgeId)
 		if err != nil {
 			log.Fatal("Ошибка парсинга списка наступивших задач на шаги работы: ", err)
 		}
 		//fmt.Println("смотрим персонажа ", personId, " задача ", taskId)
 		// Если шаг нулевой - закрываем его и начинаем честную работу
 		if step == 0 {
-			setStepDone(taskId, step)
+			setStepDone(taskId, step, personId, taskType)
 			createNewStep("work", step+1, taskId, finish_time)
 			setPersonState(personId, "work")
 			log.Printf("%d | Персонаж %d начал работать, сонливость - %.2f\n", nowTime, personId, somnolency)
@@ -159,11 +159,11 @@ func step_job() {
 		} else if somnolency > conf.MAX_SOMNOLENCY_FOR_STOP_WORK {
 			// Если не устали и при этом работали - продолжаем пахать
 			if fatifue < conf.MAX_FATIGUE_FOR_STOP_WORK && taskType == "work" {
-				setStepDone(taskId, step)
+				setStepDone(taskId, step, personId, taskType)
 				createNewStep("work", step+1, taskId, finish_time)
 			} else {
 				// Если же устали или уже отдыхали на работе - всё, завершаем рабочий день и отдых, уходим заниматься домашними делами
-				setStepDone(taskId, step)
+				setStepDone(taskId, step, personId, taskType)
 				setTaskDone(taskId)
 				setPersonState(personId, "chores")
 				log.Printf("%d | Персонаж %d закончил работать, сонливость - %.2f\n", nowTime, personId, somnolency)
@@ -174,26 +174,26 @@ func step_job() {
 			if taskType == "work" {
 				// устали - отдыхаем
 				if fatifue > conf.MAX_FATIGUE_FOR_STOP_WORK {
-					setStepDone(taskId, step)
+					setStepDone(taskId, step, personId, taskType)
 					setPersonState(personId, "rest")
 					createNewStep("rest", step+1, taskId, finish_time)
 					log.Printf("%d | Персонаж %d устал и решил отдохнуть, усталость - %.2f\n", nowTime, personId, fatifue)
 				} else {
 					// не устали - продолжаем работать
-					setStepDone(taskId, step)
+					setStepDone(taskId, step, personId, taskType)
 					createNewStep("work", step+1, taskId, finish_time)
 				}
 			} else if taskType == "rest" {
 				// А вот если отдыхали и при этом
 				// нормально отдохнули - продолжаем работать
 				if fatifue < conf.MIN_FATIGUE_FOR_START_WORK {
-					setStepDone(taskId, step)
+					setStepDone(taskId, step, personId, taskType)
 					setPersonState(personId, "work")
 					createNewStep("work", step+1, taskId, finish_time)
 					log.Printf("%d | Персонаж %d отдохнул и продолжил работу, усталость - %.2f\n", nowTime, personId, fatifue)
 				} else {
 					// не успели отдохнуть - продолжаем отдых
-					setStepDone(taskId, step)
+					setStepDone(taskId, step, personId, taskType)
 					createNewStep("rest", step+1, taskId, finish_time)
 				}
 			}
@@ -215,7 +215,40 @@ func createNewStep(stepType string, step, taskId, start_time int) {
 	}
 }
 
-func setStepDone(taskId, step int) {
+func setStepResults(taskId, step, personId int) {
+	//fmt.Println("setStepResults")
+	var isRes bool
+	var itemId, q, bw, ei int
+	var itemName string
+	err := queries["setStepResults"].query.QueryRow(taskId, step).Scan(&isRes, &itemId, &q)
+	if err != nil {
+		log.Fatalf(queries["setStepResults"].queryErrorText, step, taskId, err)
+	}
+	// Если для этого шага есть результат - добавляем его пользователю
+	if isRes {
+		// Получаем для предмета его базовую информацию (название для лога, базовый вес, срок годности)
+		err = queries["getItemBaseInfo"].query.QueryRow(itemId).Scan(&itemName, &bw, &ei)
+		if err != nil {
+			log.Fatalf(queries["getItemBaseInfo"].queryErrorText, itemId, err)
+		}
+		nowTime := lib.GetNowWorldTime()
+		// и создаём предмет (person_id, item_template_id, quantity, weight, expired_at, create_time)
+		_, err = queries["setPersonalItem"].query.Exec(personId, itemId, q, q*bw, nowTime+int64(ei*3600), nowTime)
+		if err != nil {
+			log.Fatalf(queries["setPersonalItem"].queryErrorText, itemId, personId, step, taskId, err)
+		}
+		log.Printf("На шаге %d персонаж %d успешно получил предмет \"%s\" в количестве %d", step, personId, itemName, q)
+	} else {
+		log.Printf("На шаге %d персонаж %d ничего не получил", step, personId)
+	}
+}
+
+func setStepDone(taskId, step, personId int, stepType string) {
+	// Если это был шаг работы и это не подготовительный шаг - фиксируем результаты
+	if stepType == "work" && step > 0 {
+		setStepResults(taskId, step, personId)
+	}
+
 	//fmt.Println("setStepDone")
 	_, err := queries["setStepDone"].query.Exec(taskId, step)
 	//fmt.Println("!")
@@ -247,10 +280,10 @@ func getNextStepData(taskId, step int) int64 {
 	nowTime := lib.GetNowWorldTime()
 	for {
 		//fmt.Println("getStepData")
-		err := queries["getStepData"].query.QueryRow(taskId, step).Scan(&stepFinishTime)
+		err := queries["getStepFinishTime"].query.QueryRow(taskId, step).Scan(&stepFinishTime)
 		//fmt.Println("!")
 		if err != nil {
-			log.Fatalf(queries["getStepData"].queryErrorText, step, taskId, err)
+			log.Fatalf(queries["getStepFinishTime"].queryErrorText, step, taskId, err)
 		}
 		// Нет нет запланированных шагов - уходим заниматься домашними делами
 		if !stepFinishTime.Valid {
