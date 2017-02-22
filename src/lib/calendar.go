@@ -3,9 +3,9 @@ package lib
 import (
 	"encoding/json"
 	"log"
-	"server/conf"
 	"strconv"
 
+	"github.com/ThanFX/projectGII/src/conf"
 	"github.com/patrickmn/sortutil"
 )
 

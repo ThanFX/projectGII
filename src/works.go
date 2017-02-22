@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"server/conf"
-	"server/lib"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ThanFX/projectGII/src/conf"
+	"github.com/ThanFX/projectGII/src/lib"
 )
 
 // Создаём задачи (и массив шагов выполнения для задач) на старт работ для персонажей

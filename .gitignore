@@ -3,9 +3,7 @@
 /bin
 .cache
 *.bat
-/src/github.com
-/src/server/server*
-/server
+/src/src*
 restore*
 dump*
 !/backup/dump.zip

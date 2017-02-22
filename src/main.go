@@ -1,14 +1,13 @@
 package main
 
 import (
-	"client"
-	"conf"
-	"lib"
 	"log"
 	"strconv"
 	"time"
 
-	"github.com/ThanFX/projectGII/src/lib"
+	client "github.com/ThanFX/projectGII/src/client"
+	conf "github.com/ThanFX/projectGII/src/conf"
+	lib "github.com/ThanFX/projectGII/src/lib"
 	_ "github.com/lib/pq"
 )
 
@@ -55,5 +54,5 @@ func main() {
 	lib.GetCalendar()
 	go client.ClientStart()
 	setWorldTime()
-	//createWorkResult()
+	createWorkResult()
 }

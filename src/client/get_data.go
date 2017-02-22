@@ -3,11 +3,12 @@ package client
 import (
 	"encoding/json"
 	"log"
-	"server/conf"
-	"server/lib"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ThanFX/projectGII/src/conf"
+	"github.com/ThanFX/projectGII/src/lib"
 )
 
 type Chunk struct {

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"log"
 	"math"
-	"server/conf"
-	"server/lib"
 	"strconv"
 
+	"github.com/ThanFX/projectGII/src/conf"
+	"github.com/ThanFX/projectGII/src/lib"
 	"github.com/robfig/cron"
 	"github.com/stretchr/objx"
 )

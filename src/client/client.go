@@ -5,9 +5,9 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"server/conf"
 	"time"
 
+	"github.com/ThanFX/projectGII/src/conf"
 	"github.com/gorilla/websocket"
 )
 
@@ -146,6 +146,7 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ClientStart() {
+	fmt.Println("!")
 	go hub.run()
 	go getTime(hub.broadcast)
 

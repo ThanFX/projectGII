@@ -3,8 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
-	"server/lib"
 	"time"
+
+	"github.com/ThanFX/projectGII/src/lib"
 )
 
 /*
