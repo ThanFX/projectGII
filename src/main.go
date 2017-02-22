@@ -1,13 +1,14 @@
 package main
 
 import (
+	"client"
+	"conf"
+	"lib"
 	"log"
-	"server/client"
-	"server/conf"
-	"server/lib"
 	"strconv"
 	"time"
 
+	"github.com/ThanFX/projectGII/src/lib"
 	_ "github.com/lib/pq"
 )
 
